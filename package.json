@@ -1,0 +1,17 @@
+{
+  "name": "mhpscraper",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "exceljs": "^4.1.1",
+    "express": "^4.17.1",
+    "open": "^7.1.0",
+    "puppeteer": "^5.2.1"
+  }
+}
