@@ -7,7 +7,25 @@ const InfoParser = require('./InfoParser.js');
 // const Scraper = require('./Scraper.js');
 // const DelScraper = require('./DelScraper.js');
 const ConfigReader = require('./ConfigReader.js');
-const LAYOUT_COUNTY_LIST = ['adams','allen','auglaize','champaign','delaware','fairfield','fayette','franklin','gallia','guernsey','hocking','huron'];
+const LAYOUT_COUNTY_LIST = ['adams',
+							'allen',
+							'ashtabula',
+							'auglaize',
+							'champaign',
+							'delaware',
+							'fairfield',
+							'fayette',
+							'franklin',
+							'gallia',
+							'guernsey',
+							'hocking',
+							'huron',
+							'marion',
+							'ottawa',
+							'ross',
+							'trumbull',
+							'vinton',
+							'washington'];
 const COUNTY_MAP = {
 	'ashland' : 'allen',
 	'belmont' : 'allen',
@@ -26,7 +44,21 @@ const COUNTY_MAP = {
 	'lawrence' : 'adams',
 	'madison' : 'champaign',
 	'mahoning' : 'allen',
-	'scioto' : 'allen'
+	'meigs' : 'auglaize',
+	'miami' : 'adams',
+	'morrow' : 'adams',
+	'muskingum' : 'adams',
+	'paulding' : 'adams',
+	'perry' : 'guernsey',
+	'pickaway' : 'auglaize',
+	'portage' : 'adams',
+	'preble' : 'auglaize',
+	'sandusky' : 'adams',
+	'scioto' : 'allen',
+	'seneca' : 'auglaize',
+	'wayne' : 'adams',
+	'williams' : 'adams'
+
 };
 const SCRAPER_MAP = {};
 
@@ -58,10 +90,10 @@ async function run(start, end, county){
 		}
 
 		let county = currentRow[CONFIG.DEV_CONFIG.COUNTY_IDX].toLowerCase();
-		
-		if(county === 'mahoning') break;
-		if(!['madison'].includes(county)) continue;
-		
+
+		if(county === 'athens') break;
+		if(!['ashtabula'].includes(county)) continue;
+
 		if(county in COUNTY_MAP) county = COUNTY_MAP[county];
 		let currentScraperType = SCRAPER_MAP[county];
 		let currentScraper = new currentScraperType();
@@ -88,6 +120,7 @@ async function run(start, end, county){
 			console.log('Property URL Invalid. Attempting to access via Parcel Number')
 			let parcelNum = currentRow[CONFIG.DEV_CONFIG.PARCEL_IDX];
 			scrapedInformation = await currentScraper.scrapeByAuditorURL(page, auditorURL, ""+parcelNum);
+
 			if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
 				// Process some fatal error.
 				console.log('Auditor URL Invalid. Skipping.')

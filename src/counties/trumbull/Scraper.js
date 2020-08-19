@@ -201,7 +201,26 @@ let Scraper = function(){
 		}
 		
 
-		let visitAttemptCount;
+		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
+			try{
+				
+			}
+			catch(e){
+				// console.log(e);
+				console.log('Unable to visit transfers. Attempt #' + visitAttemptCount);
+				continue;
+			}
+			break;	
+		}
+		if(visitAttemptCount === CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS){
+			console.log('Failed to reach transfers. Giving up.');
+			let remainingLinks = hyperlinks.slice(i);
+			return {
+				code: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE,
+				remaining_links: remainingLinks,
+				scraped_information: []
+			};
+		}
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			try{
 				await page.goto(auditorURL);
@@ -232,12 +251,6 @@ let Scraper = function(){
 					const searchButton = await page.$('input#ContentPlaceHolder1_Parcel_btnSearchParcel');
 					await searchButton.click();
 					
-					await page.waitForSelector("table#ContentPlaceHolder1_gvSearchResults", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
-					await page.waitFor(200);
-					const parcelURL = await page.$("table#ContentPlaceHolder1_gvSearchResults > tbody > tr > td > a");
-					// console.log(parcelURL);
-					await parcelURL.click();
-					page.waitFor(200);
 					
 					await page.waitForSelector("table#ContentPlaceHolder1_Base_fvOwnerAddress", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 					await page.waitFor(200);

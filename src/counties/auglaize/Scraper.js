@@ -164,7 +164,9 @@ let Scraper = function(){
 				let latestSaleData = transferTableData[0];
 
 				salePrice = parseInt(latestSaleData[1].replace(/[,\$]/g, ''));
-				saleDate = DateHandler.formatDate(new Date(latestSaleData[0]));	
+				
+				if(latestSaleData[0].trim() != "") saleDate = DateHandler.formatDate(new Date(latestSaleData[0]));
+				else saleDate = undefined;
 			} else {
 				salePrice = undefined;
 				saleDate = undefined;

@@ -89,9 +89,9 @@ let Scraper = function(){
 			catch(e){
 				// console.log(e);
 				try{
-					await page.waitForSelector("table#ContentPlaceHolder1_Base_fvOwnerAddress", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+					await page.waitForSelector("table#ContentPlaceHolder1_Base_fvDataMailingAddress", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 					await page.waitFor(200);
-					const ownerTableData = await this.getTableDataBySelector(page, "table#ContentPlaceHolder1_Base_fvOwnerAddress > tbody > tr > td > table.formview > tbody > tr",false);
+					const ownerTableData = await this.getTableDataBySelector(page, "table#ContentPlaceHolder1_Base_fvDataMailingAddress > tbody > tr > td > table.formview > tbody > tr",false);
 					
 					if(ownerTableData.length < 1){
 						throw "Owner Table Not Found";
@@ -122,12 +122,6 @@ let Scraper = function(){
 		let parcelInfoTable = await this.getTableDataBySelector(page, "table#ContentPlaceHolder1_Base_fvDataProfile > tbody > tr > td > table.formview > tbody > tr",false)
 		parcelInfoTable = parcelInfoTable.map(row => row[0].trim());
 		let baseOwnerName = parcelInfoTable[1];
-
-		let ownerTableData = await this.getTableDataBySelector(page, "table#ContentPlaceHolder1_Base_fvOwnerAddress > tbody > tr > td > table.formview > tbody > tr",false);
-		ownerTableData = ownerTableData.map(row => row[0].trim());
-		let ownerNames = ownerTableData[0];
-		let ownerAddress = ownerTableData.slice(1).join(' ');
-		console.log(ownerNames);
 
 		let taxTableData = await this.getTableDataBySelector(page, "table#ContentPlaceHolder1_Base_fvDataMailingAddress > tbody > tr > td > table.formview > tbody > tr",false);
 		taxTableData = taxTableData.map(row => row[0].trim());
@@ -183,7 +177,7 @@ let Scraper = function(){
 		console.log('\n');
 
 
-		let scrapedInfo = [undefined, saleDate, salePrice, baseOwnerName, ownerNames, ownerAddress, taxName, taxAddress, undefined, undefined, undefined]; 
+		let scrapedInfo = [undefined, saleDate, salePrice, baseOwnerName, undefined, undefined, taxName, taxAddress, undefined, undefined, undefined]; 
 		
 		
 		return {
@@ -200,8 +194,29 @@ let Scraper = function(){
 			}
 		}
 		
+		let prefixLength = 10 - parcelID.length;
+		parcelID = "0".repeat(prefixLength) + parcelID;
 
-		let visitAttemptCount;
+		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
+			try{
+				
+			}
+			catch(e){
+				// console.log(e);
+				console.log('Unable to visit transfers. Attempt #' + visitAttemptCount);
+				continue;
+			}
+			break;	
+		}
+		if(visitAttemptCount === CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS){
+			console.log('Failed to reach transfers. Giving up.');
+			let remainingLinks = hyperlinks.slice(i);
+			return {
+				code: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE,
+				remaining_links: remainingLinks,
+				scraped_information: []
+			};
+		}
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			try{
 				await page.goto(auditorURL);
@@ -235,13 +250,12 @@ let Scraper = function(){
 					await page.waitForSelector("table#ContentPlaceHolder1_gvSearchResults", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 					await page.waitFor(200);
 					const parcelURL = await page.$("table#ContentPlaceHolder1_gvSearchResults > tbody > tr > td > a");
-					// console.log(parcelURL);
 					await parcelURL.click();
 					page.waitFor(200);
 					
-					await page.waitForSelector("table#ContentPlaceHolder1_Base_fvOwnerAddress", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+					await page.waitForSelector("table#ContentPlaceHolder1_Base_fvDataMailingAddress", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 					await page.waitFor(200);
-					const ownerTableData = await this.getTableDataBySelector(page, "table#ContentPlaceHolder1_Base_fvOwnerAddress > tbody > tr > td > table.formview > tbody > tr",false);
+					const ownerTableData = await this.getTableDataBySelector(page, "table#ContentPlaceHolder1_Base_fvDataMailingAddress > tbody > tr > td > table.formview > tbody > tr",false);
 					
 					if(ownerTableData.length < 1){
 						throw "Owner Table Not Found";
