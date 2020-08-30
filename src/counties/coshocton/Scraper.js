@@ -110,38 +110,25 @@ let Scraper = function(){
 		const ownerTableData = await this.getTableDataBySelector(page, "table#Owner tr",false);
 			// console.log('Owner Table Data:');
 			// console.log(ownerTableData);
-		let ownerNames = await this.getInfoFromTableByRowHeader(ownerTableData, 'Owner', '');
+		let ownerNames = await this.getInfoFromTableByRowHeader(ownerTableData, 'Owner 1', '');
 		console.log(ownerNames);
-		let ownerAddress = await this.getInfoFromTableByRowHeader(ownerTableData, 'Address at time of transfer','');	
-		console.log(ownerAddress);
-		// const parcelIDString = (await (await (await page.$('.DataletHeaderTopLeft')).getProperty('innerText')).jsonValue());
-		// const parcelID = parcelIDString.substring(parcelIDString.indexOf(':')+2);
-		const taxTableData = await this.getTableDataBySelector(page, "table[id*='Tax Mailing Name and Address'] tr", false);
-		let taxName = await this.getInfoFromTableByRowHeader(taxTableData, 'Mailing Name 1', '');
-
-		let taxAddress = await this.getInfoFromTableByRowHeader(taxTableData, 'Address 1', '');
-		taxAddress += await this.getInfoFromTableByRowHeader(taxTableData, 'Address 2', '');
-		taxAddress += await this.getInfoFromTableByRowHeader(taxTableData, 'Address 3', '');
-
-		console.log(taxName);
-		console.log(taxAddress);
-
-		let scrapedInfo = [undefined, undefined, undefined, ownerNames, undefined, ownerAddress, taxName, taxAddress, undefined, undefined, undefined]; 
 		
+
+		let scrapedInfo = [undefined, undefined, undefined, ownerNames, undefined, undefined, undefined, undefined, undefined, undefined, undefined]; 
 		
+		let sideMenu = await page.$$("div#sidemenu > li.unsel > a");
+		let transferTag;
+		for(let i = 0; i < sideMenu.length; i++){
+			handle = sideMenu[i];
+			let prop = await handle.getProperty('innerText');
+			let propJSON = await prop.jsonValue();
+			if(propJSON === 'Sales') transferTag = handle;
+		}
 		
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			try{
-				let sideMenu = await page.$$("div#sidemenu > li.unsel > a");
-				let transferTag;
-				for(let i = 0; i < sideMenu.length; i++){
-					handle = sideMenu[i];
-					let prop = await handle.getProperty('innerText');
-					let propJSON = await prop.jsonValue();
-					if(propJSON === 'Sales') transferTag = handle;
-				}
 				await transferTag.click();
-				await page.waitForSelector("table[id='Sales Summary']", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+				await page.waitForSelector("table[id='Sales']", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 			}
 			catch(e){
 				console.log(e);
@@ -154,9 +141,9 @@ let Scraper = function(){
 			console.log('Failed to reach sales. Giving up.');
 			
 		} else {
-			const conveyanceTableData = await this.getTableDataBySelector(page, "table[id='Sales Summary'] tr", false);
-			let transferAmount = await this.getInfoFromTableByColumnHeader(conveyanceTableData, 'Price', 0);
-			let transferDate = await this.getInfoFromTableByColumnHeader(conveyanceTableData, 'Date', 0);
+			const conveyanceTableData = await this.getTableDataBySelector(page, "table[id='Sales'] tr", false);
+			let transferAmount = await this.getInfoFromTableByColumnHeader(conveyanceTableData, 'Sale Amount', 0);
+			let transferDate = await this.getInfoFromTableByColumnHeader(conveyanceTableData, 'Sale Date', 0);
 
 			if(transferAmount.trim() !== '') transferAmount = parseInt(transferAmount.replace(/[,\$]/g, ''));
 			else transferAmount = undefined;
@@ -184,10 +171,9 @@ let Scraper = function(){
 				return_status: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE
 			}
 		}
-		
-		parcelID = parcelID.replace(/-/g,'');
-		let prefixLength = 12 - parcelID.length;
-		if(prefixLength >= 0) parcelID = "0".repeat(prefixLength) + parcelID;
+	
+		let prefixLength = 13 - parcelID.length;
+		parcelID = "0".repeat(prefixLength) + parcelID;
 
 		let visitAttemptCount;
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){

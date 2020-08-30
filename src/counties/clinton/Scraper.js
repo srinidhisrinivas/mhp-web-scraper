@@ -200,7 +200,8 @@ let Scraper = function(){
 			}
 		}
 		
-
+		let prefixLength = 15 - parcelID.length;
+		if(prefixLength >= 0) parcelID = "0".repeat(prefixLength) + parcelID;
 		
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			try{

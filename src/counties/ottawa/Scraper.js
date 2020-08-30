@@ -195,8 +195,14 @@ let Scraper = function(){
 				return_status: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE
 			}
 		}
-		let prefixLength = 16 - parcelID.length;
-		parcelID = "0".repeat(prefixLength) + parcelID;
+
+		if(parcelID === '1400106'){
+			parcelID = '0' + parcelID;
+		}
+		else{
+			let prefixLength = 16 - parcelID.length;
+			parcelID = "0".repeat(prefixLength) + parcelID;
+		}
 
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			try{

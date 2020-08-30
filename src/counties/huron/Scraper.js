@@ -193,28 +193,9 @@ let Scraper = function(){
 				return_status: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE
 			}
 		}
+		let prefixLength = 15 - parcelID.length;
+		if(prefixLength >= 0) parcelID = "0".repeat(prefixLength) + parcelID;
 		
-
-		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
-			try{
-				
-			}
-			catch(e){
-				// console.log(e);
-				console.log('Unable to visit transfers. Attempt #' + visitAttemptCount);
-				continue;
-			}
-			break;	
-		}
-		if(visitAttemptCount === CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS){
-			console.log('Failed to reach transfers. Giving up.');
-			let remainingLinks = hyperlinks.slice(i);
-			return {
-				code: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE,
-				remaining_links: remainingLinks,
-				scraped_information: []
-			};
-		}
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			try{
 				await page.goto(auditorURL);
@@ -239,9 +220,12 @@ let Scraper = function(){
 						if(propJSON === 'Parcel') transferTag = handle;
 					}
 					await transferTag.click();
+					await page.waitFor(200);
 					await page.waitForSelector("input#ContentPlaceHolder1_Parcel_tbParcelNumber");
+					// await page.waitFor(200);
 					await page.click('input#ContentPlaceHolder1_Parcel_tbParcelNumber', {clickCount: 3});					
 					await page.type('input#ContentPlaceHolder1_Parcel_tbParcelNumber', parcelID);
+					await page.waitFor(200);
 					const searchButton = await page.$('input#ContentPlaceHolder1_Parcel_btnSearchParcel');
 					await searchButton.click();
 					await page.waitFor(200);

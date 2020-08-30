@@ -76,7 +76,6 @@ let Scraper = function(){
 			}
 		}
 		// console.log('Receive call to property with URL: '+propertyURL);
-		const treasurerURL = 'https://treapropsearch.franklincountyohio.gov/';
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			
 			try{
@@ -106,7 +105,6 @@ let Scraper = function(){
 				scraped_information: []
 			};
 		}
-		
 		const ownerTableData = await this.getTableDataBySelector(page, "table#Owner tr",false);
 			// console.log('Owner Table Data:');
 			// console.log(ownerTableData);
@@ -138,7 +136,7 @@ let Scraper = function(){
 					handle = sideMenu[i];
 					let prop = await handle.getProperty('innerText');
 					let propJSON = await prop.jsonValue();
-					if(propJSON === 'Sales') transferTag = handle;
+					if(propJSON.includes('Sales')) transferTag = handle;
 				}
 				await transferTag.click();
 				await page.waitForSelector("table[id='Sales Summary']", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
@@ -184,48 +182,42 @@ let Scraper = function(){
 				return_status: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE
 			}
 		}
-		
-		parcelID = parcelID.replace(/-/g,'');
-		let prefixLength = 12 - parcelID.length;
-		if(prefixLength >= 0) parcelID = "0".repeat(prefixLength) + parcelID;
-
+		// console.log('Received call to auditor with parcelID: ' + parcelID);
 		let visitAttemptCount;
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 		
 			try{
 				await page.goto(auditorURL);
-				await page.waitForSelector("button#btAgree", {timeout: CONFIG.DEV_CONFIG.ACK_TIMEOUT_MSEC});
-				await page.waitFor(200);
-				let ackButton = await page.$("button#btAgree");
-				await ackButton.click();
-				await page.waitFor(200);
-				throw "Acknowledge Button Clicked";
 
-			} catch(e){
-				try{
-					await page.waitForSelector("input#inpParid");
-					await page.click('input#inpParid', {clickCount: 3});					
-					await page.type('input#inpParid', parcelID);
-					const searchButton = await page.$('button#btSearch');
-					await searchButton.click();
-					
-					await page.waitForSelector("table#Owner", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
-					await page.waitFor(200);
-					
-					const ownerTableData = await this.getTableDataBySelector(page, "table#Owner tr",false);
-					
-					if(ownerTableData.length < 1){
-						throw "Owner Table Not Found";
-					}
+				await page.waitForSelector("input#inpParid");
+				await page.click('input#inpParid', {clickCount: 3});					
+				await page.type('input#inpParid', parcelID);
+				const searchButton = await page.$('button#btSearch');
+				await searchButton.click();
 				
-				}
-				catch(e){
-					console.log(e);
-					console.log('Unable to visit ' + auditorURL + '. Attempt #' + visitAttemptCount);
-					continue;
-				}
-			}
+				await page.waitForSelector('tr.SearchResults');
+				await page.waitFor(200);
 
+				await page.click("tr.SearchResults");
+				await page.waitFor(200);
+
+				await page.waitForSelector("table#Owner", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+				await page.waitFor(200);
+				
+				const ownerTableData = await this.getTableDataBySelector(page, "table#Owner tr",false);
+				
+				if(ownerTableData.length < 1){
+					throw "Owner Table Not Found";
+				}
+				
+			}
+			catch(e){
+				console.log(e);
+				console.log('Unable to visit ' + auditorURL + '. Attempt #' + visitAttemptCount);
+				continue;
+			}
+		
+			
 			break;	
 		}
 

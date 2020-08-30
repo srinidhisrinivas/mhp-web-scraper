@@ -55,47 +55,43 @@ let Scraper = function(){
 		return info;
 	}
 	this.getInfoFromTableByColumnHeader = async function(table, header, rowNum){
-		let headers = table[0];
+		let headers = table.shift();
 		// console.log(headers);
 		// console.log(header);
 		let colIndex = headers.indexOf(header);
-
-		if(colIndex >= 0){
-			return table[rowNum + 1][colIndex];
+		if(colIndex > 0){
+			return table[rowNum][colIndex];
 		} else {
 			return 'ERR'
 		}
 	}
 
 
-	this.scrapeByPropertyURL = async function(page, propertyURL, parcelID){
+	this.scrapeByPropertyURL = async function(page, propertyURL){
 		if(propertyURL === undefined){
 			return {
 				scraped_information: [],
 				return_status: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE
 			}
 		}
-		// console.log('Receive call to property with URL: '+propertyURL);
-		const treasurerURL = 'https://treapropsearch.franklincountyohio.gov/';
+		
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
-			
 			try{
 				await page.goto(propertyURL);
-				await page.waitForSelector("table#Owner", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
-				await page.waitFor(200);
-				const ownerTableData = await this.getTableDataBySelector(page, "table#Owner tr",false);
 				
+				await page.waitForSelector("table#maintable", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+				await page.waitFor(200);
+				const ownerTableData = await this.getTableDataBySelector(page, "table#maintable",false);
 				if(ownerTableData.length < 1){
 					throw "Owner Table Not Found";
 				}
+				
 			}
 			catch(e){
 				// console.log(e);
 				console.log('Unable to visit ' + propertyURL + '. Attempt #' + visitAttemptCount);
 				continue;
 			}
-		
-			
 			break;	
 		}
 
@@ -107,45 +103,58 @@ let Scraper = function(){
 			};
 		}
 		
-		const ownerTableData = await this.getTableDataBySelector(page, "table#Owner tr",false);
-			// console.log('Owner Table Data:');
-			// console.log(ownerTableData);
-		let ownerNames = await this.getInfoFromTableByRowHeader(ownerTableData, 'Owner', '');
-		console.log(ownerNames);
-		let ownerAddress = await this.getInfoFromTableByRowHeader(ownerTableData, 'Address at time of transfer','');	
-		console.log(ownerAddress);
+
 		// const parcelIDString = (await (await (await page.$('.DataletHeaderTopLeft')).getProperty('innerText')).jsonValue());
 		// const parcelID = parcelIDString.substring(parcelIDString.indexOf(':')+2);
-		const taxTableData = await this.getTableDataBySelector(page, "table[id*='Tax Mailing Name and Address'] tr", false);
-		let taxName = await this.getInfoFromTableByRowHeader(taxTableData, 'Mailing Name 1', '');
 
-		let taxAddress = await this.getInfoFromTableByRowHeader(taxTableData, 'Address 1', '');
-		taxAddress += await this.getInfoFromTableByRowHeader(taxTableData, 'Address 2', '');
-		taxAddress += await this.getInfoFromTableByRowHeader(taxTableData, 'Address 3', '');
+		let headTableData = await this.getTableDataBySelector(page, "table#headtable tr", false);
+		let baseOwnerName = headTableData[0][0];
+		console.log(baseOwnerName);
 
+		let ownerTableData = await this.getTableDataBySelector(page, "table#maintable tr",false);
+		ownerTableData = ownerTableData.slice(1,7);
+		ownerTableData = ownerTableData.filter(row => row.length > 0);
+		ownerTableData = ownerTableData.map(row => [row[0], row[2]]);
+		ownerTableData = ownerTableData.filter(row => row.some(e => e.length > 0));
+		ownerTableData.pop();
+
+		let ownerData = ownerTableData.map(row => row[0]);
+		let mailingData = ownerTableData.map(row => row[1]);
+
+		let ownerNames = ownerData[0];
+		console.log(ownerNames);
+		let ownerAddress = ownerData.slice(1).join(' ');
+		console.log(ownerAddress);
+
+		let taxName = mailingData[0];
 		console.log(taxName);
+		let taxAddress = mailingData.slice(1).join(' ');
 		console.log(taxAddress);
 
-		let scrapedInfo = [undefined, undefined, undefined, ownerNames, undefined, ownerAddress, taxName, taxAddress, undefined, undefined, undefined]; 
-		
-		
+
+		let scrapedInfo = [undefined, undefined, undefined, baseOwnerName, ownerNames, ownerAddress, taxName, taxAddress, undefined, undefined, undefined]; 
 		
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			try{
-				let sideMenu = await page.$$("div#sidemenu > li.unsel > a");
 				let transferTag;
+				let sideMenu = await page.$$("ul.ktsUL > li.ktsLI > a");
+				// console.log(sideMenu);
+				//console.log(sideMenu);
 				for(let i = 0; i < sideMenu.length; i++){
 					handle = sideMenu[i];
 					let prop = await handle.getProperty('innerText');
 					let propJSON = await prop.jsonValue();
-					if(propJSON === 'Sales') transferTag = handle;
+					// console.log(propJSON);
+					if(propJSON.includes('Sales History')) transferTag = handle;
 				}
 				await transferTag.click();
-				await page.waitForSelector("table[id='Sales Summary']", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+				await page.waitForSelector("table#maintable", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 			}
 			catch(e){
 				console.log(e);
 				console.log('Unable to visit transfers. Attempt #' + visitAttemptCount);
+				await page.goto(propertyURL);
+
 				continue;
 			}
 			break;	
@@ -154,13 +163,21 @@ let Scraper = function(){
 			console.log('Failed to reach sales. Giving up.');
 			
 		} else {
-			const conveyanceTableData = await this.getTableDataBySelector(page, "table[id='Sales Summary'] tr", false);
-			let transferAmount = await this.getInfoFromTableByColumnHeader(conveyanceTableData, 'Price', 0);
-			let transferDate = await this.getInfoFromTableByColumnHeader(conveyanceTableData, 'Date', 0);
+			let conveyanceTableData = await this.getTableDataBySelector(page, "table#maintable tr", false);
+			conveyanceTableData.shift();
+			conveyanceTableData = conveyanceTableData.pop();
+			let latestDateIndex = 0;
+			
+			let transferAmount = '', transferDate = '';
+			if(conveyanceTableData !== undefined) {
+				transferAmount = conveyanceTableData[6];
+				transferDate = conveyanceTableData[2];
+			}	
 
 			if(transferAmount.trim() !== '') transferAmount = parseInt(transferAmount.replace(/[,\$]/g, ''));
 			else transferAmount = undefined;
-			transferDate = DateHandler.formatDate(new Date(transferDate));
+			if(transferDate.trim() !== '') transferDate = DateHandler.formatDate(DateHandler.incrementDate(new Date(transferDate)));
+			else transferAmount = undefined;
 
 			console.log(transferAmount);
 			console.log(transferDate);
@@ -170,7 +187,7 @@ let Scraper = function(){
 		}
 
 		console.log('\n');
-
+		
 		return {
 			scraped_information: scrapedInfo,
 			return_status: CONFIG.DEV_CONFIG.SUCCESS_CODE
@@ -184,51 +201,36 @@ let Scraper = function(){
 				return_status: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE
 			}
 		}
-		
-		parcelID = parcelID.replace(/-/g,'');
-		let prefixLength = 12 - parcelID.length;
-		if(prefixLength >= 0) parcelID = "0".repeat(prefixLength) + parcelID;
+		parcelID = parcelID.replace(/[-.]/g,'');
 
-		let visitAttemptCount;
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
-		
 			try{
 				await page.goto(auditorURL);
-				await page.waitForSelector("button#btAgree", {timeout: CONFIG.DEV_CONFIG.ACK_TIMEOUT_MSEC});
+				await page.type("input[name='quantity']", parcelID);
+				await page.evaluate(() => {
+					document.querySelector("input.nicerbutton").click();
+				});
+				await page.waitForSelector("table.s-results", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 				await page.waitFor(200);
-				let ackButton = await page.$("button#btAgree");
-				await ackButton.click();
+				await page.waitForSelector("table.s-results td[align='right'] > a", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+				await page.evaluate(() => {
+					document.querySelector("table.s-results td[align='right'] > a").click();
+				});
 				await page.waitFor(200);
-				throw "Acknowledge Button Clicked";
-
-			} catch(e){
-				try{
-					await page.waitForSelector("input#inpParid");
-					await page.click('input#inpParid', {clickCount: 3});					
-					await page.type('input#inpParid', parcelID);
-					const searchButton = await page.$('button#btSearch');
-					await searchButton.click();
-					
-					await page.waitForSelector("table#Owner", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
-					await page.waitFor(200);
-					
-					const ownerTableData = await this.getTableDataBySelector(page, "table#Owner tr",false);
-					
-					if(ownerTableData.length < 1){
-						throw "Owner Table Not Found";
-					}
+				await page.waitForSelector("table#maintable",{timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC})
+				const ownerTableData = await this.getTableDataBySelector(page, "table#maintable",false);
+				if(ownerTableData.length < 1){
+					throw "Owner Table Not Found";
+				}
 				
-				}
-				catch(e){
-					console.log(e);
-					console.log('Unable to visit ' + auditorURL + '. Attempt #' + visitAttemptCount);
-					continue;
-				}
 			}
-
+			catch(e){
+				console.log(e);
+				console.log('Unable to visit ' + auditorURL + '. Attempt #' + visitAttemptCount);
+				continue;
+			}
 			break;	
 		}
-
 		if(visitAttemptCount === CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS){
 			console.log('Failed to reach ' + auditorURL + '. Giving up.');
 			return {
@@ -238,9 +240,9 @@ let Scraper = function(){
 		}
 		
 		let propertyURL = page.url();
-		// console.log('Making a call to property');
-		let scrapedInfo = await this.scrapeByPropertyURL(page, propertyURL, parcelID);
-		// scrapedInfo.scraped_information[CONFIG.DEV_CONFIG.PROP_URL_IDX] = propertyURL;
+
+		let scrapedInfo = await this.scrapeByPropertyURL(page, propertyURL);
+		scrapedInfo.scraped_information[CONFIG.DEV_CONFIG.PROP_URL_IDX] = propertyURL;
 		
 		return {
 			scraped_information: scrapedInfo.scraped_information,
@@ -260,6 +262,12 @@ function infoValidator(info, processedInformation){
 	return valid;
 	
 }	
-
+async function run(){
+	const browser = await puppeteer.launch({headless: false, slowMo: 5});
+	const page = await browser.newPage();
+	const scrape = new Scraper();
+	let allHyperlinks = await scrape.getParcelIDHyperlinksForDate(page);
+	let processedInformation = await scrape.processHyperLinks(page, allHyperlinks, infoValidator);
+}
 
 // run();

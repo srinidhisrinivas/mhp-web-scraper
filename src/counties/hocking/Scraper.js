@@ -125,6 +125,7 @@ let Scraper = function(){
 		let ownerNames = ownerTableData[0];
 		let ownerAddress = ownerTableData.slice(1).join(' ');
 		console.log(ownerNames);
+		console.log(ownerAddress);
 
 		let taxTableData = await this.getTableDataBySelector(page, "table#ContentPlaceHolder1_Base_fvDataMailingAddress > tbody > tr > td > table.formview > tbody > tr",false);
 		taxTableData = taxTableData.map(row => row[0].trim());
@@ -180,7 +181,7 @@ let Scraper = function(){
 		console.log('\n');
 
 
-		let scrapedInfo = [undefined, saleDate, salePrice, ownerNames, undefined, undefined, taxName, taxAddress, undefined, undefined, undefined]; 
+		let scrapedInfo = [undefined, saleDate, salePrice, ownerNames, undefined, ownerAddress, taxName, taxAddress, undefined, undefined, undefined]; 
 		
 		
 		return {
@@ -243,16 +244,24 @@ let Scraper = function(){
 					}
 					await transferTag.click();
 					await page.waitForSelector("input#ContentPlaceHolder1_Parcel_tbParcelNumber");
+					page.waitFor(200);
 					await page.click('input#ContentPlaceHolder1_Parcel_tbParcelNumber', {clickCount: 3});					
 					await page.type('input#ContentPlaceHolder1_Parcel_tbParcelNumber', parcelID);
-					const searchButton = await page.$('input#ContentPlaceHolder1_Parcel_btnSearchParcel');
-					await searchButton.click();
+					
+					await page.evaluate(() => {
+						document.querySelector("input#ContentPlaceHolder1_Parcel_btnSearchParcel").click();
+					});
+					// const searchButton = await page.$('input#ContentPlaceHolder1_Parcel_btnSearchParcel');
+					// await searchButton.click();
 					
 					await page.waitForSelector("table#ContentPlaceHolder1_gvSearchResults", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 					await page.waitFor(200);
-					const parcelURL = await page.$("table#ContentPlaceHolder1_gvSearchResults > tbody > tr > td > a");
-					// console.log(parcelURL);
-					await parcelURL.click();
+					await page.evaluate(() => {
+						document.querySelector("table#ContentPlaceHolder1_gvSearchResults > tbody > tr > td > a").click();
+					});
+					// const parcelURL = await page.$("table#ContentPlaceHolder1_gvSearchResults > tbody > tr > td > a");
+					// // console.log(parcelURL);
+					// await parcelURL.click();
 					page.waitFor(200);
 					
 					await page.waitForSelector("table#ContentPlaceHolder1_Base_fvDataProfileOwner", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});

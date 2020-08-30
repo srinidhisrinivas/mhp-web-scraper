@@ -196,6 +196,7 @@ let Scraper = function(){
 			}
 		}
 		
+		console.log('ParcelID: '+parcelID);
 
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			try{
@@ -242,11 +243,17 @@ let Scraper = function(){
 					}
 					await transferTag.click();
 					await page.waitForSelector("input#ContentPlaceHolder1_Parcel_tbParcelNumber");
-					await page.click('input#ContentPlaceHolder1_Parcel_tbParcelNumber', {clickCount: 3});					
+					await page.waitFor(200);
+					await page.click('input#ContentPlaceHolder1_Parcel_tbParcelNumber', {clickCount: 3});	
+							
 					await page.type('input#ContentPlaceHolder1_Parcel_tbParcelNumber', parcelID);
-					const searchButton = await page.$('input#ContentPlaceHolder1_Parcel_btnSearchParcel');
-					await searchButton.click();
 					
+					// const searchButton = await page.$('input#ContentPlaceHolder1_Parcel_btnSearchParcel');
+					// await searchButton.click();
+					await page.waitFor(200);
+					await page.evaluate(() => {
+						document.querySelector("input#ContentPlaceHolder1_Parcel_btnSearchParcel").click();
+					});
 					await page.waitForSelector("table#ContentPlaceHolder1_gvSearchResults", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 					await page.waitFor(200);
 					const parcelURL = await page.$("table#ContentPlaceHolder1_gvSearchResults > tbody > tr > td > a");
