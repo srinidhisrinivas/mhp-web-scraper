@@ -12,6 +12,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'ashtabula',
 							'athens',
 							'auglaize',
+							'brown',
 							'butler',
 							'champaign',
 							'clermont',
@@ -24,7 +25,9 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'franklin',
 							'gallia',
 							'guernsey',
+							'hardin',
 							'harrison',
+							'henry',
 							'hocking',
 							'huron',
 							'marion',
@@ -38,6 +41,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 const COUNTY_MAP = {
 	'ashland' : 'allen',
 	'belmont' : 'allen',
+	'carroll' : 'brown',
 	'columbiana' : 'allen',
 	'darke' : 'adams',
 	'defiance' : 'adams',
@@ -50,22 +54,27 @@ const COUNTY_MAP = {
 	'knox' : 'adams',
 	'lake' : 'auglaize',
 	'lawrence' : 'adams',
+	'logan' : 'brown',
 	'madison' : 'champaign',
 	'mahoning' : 'allen',
 	'meigs' : 'auglaize',
 	'miami' : 'adams',
 	'monroe' : 'crawford',
+	'morgan' : 'brown',
 	'morrow' : 'adams',
 	'muskingum' : 'adams',
 	'paulding' : 'adams',
 	'perry' : 'guernsey',
 	'pickaway' : 'auglaize',
+	'pike' : 'henry',
 	'portage' : 'adams',
 	'preble' : 'auglaize',
 	'putnam' : 'crawford',
 	'sandusky' : 'adams',
 	'scioto' : 'allen',
 	'seneca' : 'auglaize',
+	'tuscarawas' : 'brown',
+	'union' : 'henry',
 	'van wert' : 'crawford',
 	'wayne' : 'adams',
 	'williams' : 'adams',
@@ -132,9 +141,9 @@ async function run(start, end, county){
 
 		let county = currentRow[CONFIG.DEV_CONFIG.COUNTY_IDX].toLowerCase().trim();
 
-		if(county === '') break;
+		if(county === 'van wert') break;
 		
-		if(!['crawford','harrison','monroe','noble','putnam','van wert','wyandot'].includes(county)) continue;
+		if(!['union'].includes(county)) continue;
 		
 		// if( (!LAYOUT_COUNTY_LIST.includes(county) && !(county in COUNTY_MAP)) || completed_counties.includes(county)) continue;
 		
