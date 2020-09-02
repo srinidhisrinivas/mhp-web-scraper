@@ -12,6 +12,7 @@
     "exceljs": "^4.1.1",
     "express": "^4.17.1",
     "open": "^7.1.0",
-    "puppeteer": "^5.2.1"
+    "puppeteer": "^5.2.1",
+    "random-useragent": "^0.4.0"
   }
 }

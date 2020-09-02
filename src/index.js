@@ -25,6 +25,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'franklin',
 							'gallia',
 							'guernsey',
+							'hamilton',
 							'hardin',
 							'harrison',
 							'henry',
@@ -33,10 +34,12 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'marion',
 							'noble',
 							'ottawa',
+							'richland',
 							'ross',
 							'trumbull',
 							'vinton',
 							'washington',
+							'wood',
 							'wyandot'];
 const COUNTY_MAP = {
 	'ashland' : 'allen',
@@ -141,9 +144,9 @@ async function run(start, end, county){
 
 		let county = currentRow[CONFIG.DEV_CONFIG.COUNTY_IDX].toLowerCase().trim();
 
-		if(county === 'van wert') break;
+		if(county === 'wyandot') break;
 		
-		if(!['union'].includes(county)) continue;
+		if(!['wood'].includes(county)) continue;
 		
 		// if( (!LAYOUT_COUNTY_LIST.includes(county) && !(county in COUNTY_MAP)) || completed_counties.includes(county)) continue;
 		
