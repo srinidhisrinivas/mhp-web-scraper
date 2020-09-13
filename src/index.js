@@ -24,6 +24,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'fayette',
 							'franklin',
 							'gallia',
+							'geauga',
 							'guernsey',
 							'hamilton',
 							'hardin',
@@ -31,11 +32,15 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'henry',
 							'hocking',
 							'huron',
+							'lucas',
 							'marion',
+							'montgomery',
 							'noble',
 							'ottawa',
 							'richland',
 							'ross',
+							'stark',
+							'summit',
 							'trumbull',
 							'vinton',
 							'washington',
@@ -120,6 +125,7 @@ completed_counties = ['adams',
 
 */
 
+
 async function run(start, end, county){
 	const browser = await puppeteer.launch({headless: false});
 	const page = await browser.newPage();
@@ -144,9 +150,9 @@ async function run(start, end, county){
 
 		let county = currentRow[CONFIG.DEV_CONFIG.COUNTY_IDX].toLowerCase().trim();
 
-		if(county === 'wyandot') break;
+		if(county === 'guernsey') break;
 		
-		if(!['wood'].includes(county)) continue;
+		if(!['geauga'].includes(county)) continue;
 		
 		// if( (!LAYOUT_COUNTY_LIST.includes(county) && !(county in COUNTY_MAP)) || completed_counties.includes(county)) continue;
 		
