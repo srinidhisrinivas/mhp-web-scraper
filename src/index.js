@@ -25,6 +25,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'franklin',
 							'gallia',
 							'geauga',
+							'greene',
 							'guernsey',
 							'hamilton',
 							'hardin',
@@ -32,8 +33,10 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'henry',
 							'hocking',
 							'huron',
+							'jefferson',
 							'lucas',
 							'marion',
+							'medina',
 							'montgomery',
 							'noble',
 							'ottawa',
@@ -43,6 +46,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'summit',
 							'trumbull',
 							'vinton',
+							'warren',
 							'washington',
 							'wood',
 							'wyandot'];
@@ -93,7 +97,11 @@ const SCRAPER_MAP = {};
 
 LAYOUT_COUNTY_LIST.forEach((county) => {
 	SCRAPER_MAP[county] = require('./counties/'+county+'/Scraper.js');
-})
+});
+
+const TARGET_COUNTIES = 'warren'; // all, some, between, or county name;
+const TARGET_COUNTY_LIST = ['clermont', 'coshocton']; // list of counties if above is 'some'. start and end counties if above is 'between'
+const EXCLUDED_COUNTY_LIST = []; // to exclude any counties
 
 /*
 completed_counties = ['adams',
@@ -125,23 +133,80 @@ completed_counties = ['adams',
 
 */
 
+async function run(infilepath, headless){
+	const CONFIG = new ConfigReader('delaware');
+	let remainingInfo, finalpath, lastErroredParcel = '', numLastLinkErrors = 1;
+	headless = (headless === 'true');
+	while(true){
+		
+		let returnStatus = await runCycle(infilepath, remainingInfo, finalpath, headless, numLastLinkErrors);
+		if(numLastLinkErrors === CONFIG.DEV_CONFIG.MAX_LINK_ERRORS) numLastLinkErrors = 1;
 
-async function run(start, end, county){
-	const browser = await puppeteer.launch({headless: false});
+		if(returnStatus.code === CONFIG.DEV_CONFIG.SUCCESS_CODE){
+			
+			// log success
+			console.log('Success');
+			console.log('Output file is: ' + returnStatus.finalpath);
+			return returnStatus; 
+		} else if(returnStatus.code === CONFIG.DEV_CONFIG.FILE_READ_ERROR_CODE){
+			numLastLinkErrors++;
+			if(numLastLinkErrors > CONFIG.DEV_CONFIG.MAX_LINK_ERRORS){
+				console.log('Unable to read file. Aborting.');
+				throw "File can't be read!";
+				break;
+			}
+		} else {
+			// console.log(JSON.stringify(returnStatus,null,2));	
+			let erroredParcel = returnStatus.remaining_info[CONFIG.DEV_CONFIG.PARCEL_IDX];
+			// If link causes error more than once
+
+			if(erroredParcel === lastErroredParcel){
+				numLastLinkErrors++;
+				
+			} else {
+				numLastLinkErrors = 1;
+			}
+			lastErroredParcel = erroredParcel;
+			remainingInfo = returnStatus.remaining_info;
+			finalpath = returnStatus.finalpath;
+			console.log('Failed. See above error. Trying again.');
+		}
+		// log error
+		
+	}
+	
+}
+async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastLinkErrors){
+	const browser = await puppeteer.launch({headless: headless});
 	const page = await browser.newPage();
 
-	const CONFIG = new ConfigReader(county);
-	let excel = new ExcelWriter(start,end, county);
-	let worksheetInformation = await excel.readFile(CONFIG.USER_CONFIG.SOURCE_FILE);
+	const CONFIG = new ConfigReader('delaware');
+	
+	let excel = new ExcelWriter(0, 0, 'delaware');
+	let worksheetInformation;
+	if(remainingInfo !== undefined) worksheetInformation = remainingInfo;
+	else {
+		// console.log("Here");
+		try{
+			worksheetInformation = await excel.readFile(infilepath);
+			worksheetInformation = worksheetInformation.map(row => row.slice(1));
+			worksheetInformation.shift();
+		} catch(e){
+			return {
+				return_status: CONFIG.DEV_CONFIG.FILE_READ_ERROR_CODE,
+				remaining_info: remainingInfo
+			}
+		}
+	}
+	// console.log(worksheetInformation);
 	
 	let updatedInformation = [];
-	let filepath = 'C:\\Python37\\Programs\\MHPScraper\\Excel\\Audit_20200821.xlsx';
-	let lastCounty = 'adams';
+	let lastCounty = worksheetInformation[0][CONFIG.DEV_CONFIG.COUNTY_IDX];
 	for(let i = 1; i < worksheetInformation.length; i++){
 
-		let currentRow = worksheetInformation[i].slice(1);
-		// console.log(currentRow[CONFIG.DEV_CONFIG.DATE_IDX]);
-		// console.log(typeof currentRow[CONFIG.DEV_CONFIG.DATE_IDX]);
+
+		let currentRow = worksheetInformation[i];
+		
 		if(typeof currentRow[CONFIG.DEV_CONFIG.DATE_IDX] === "string" && currentRow[CONFIG.DEV_CONFIG.DATE_IDX].trim() !== ''){
 			currentRow[CONFIG.DEV_CONFIG.DATE_IDX] = DateHandler.formatDate(new Date(currentRow[CONFIG.DEV_CONFIG.DATE_IDX]));	
 		} else if(typeof currentRow[CONFIG.DEV_CONFIG.DATE_IDX] === "object"){
@@ -150,77 +215,109 @@ async function run(start, end, county){
 
 		let county = currentRow[CONFIG.DEV_CONFIG.COUNTY_IDX].toLowerCase().trim();
 
-		if(county === 'guernsey') break;
-		
-		if(!['geauga'].includes(county)) continue;
-		
-		// if( (!LAYOUT_COUNTY_LIST.includes(county) && !(county in COUNTY_MAP)) || completed_counties.includes(county)) continue;
-		
-		// if(county !== lastCounty){
-		// 	console.log(filepath);
-		// 	filepath = await excel.writeToFile(CONFIG.USER_CONFIG.TARGET_DIR, updatedInformation, filepath);
-		// 	updatedInformation = [];
-		// 	lastCounty = county;
-		// }
-		if(county in COUNTY_MAP) county = COUNTY_MAP[county];
-		let currentScraperType = SCRAPER_MAP[county];
-		let currentScraper = new currentScraperType();
+		// console.log(county);
+		let skipThisParcel = false;
+		if( (!LAYOUT_COUNTY_LIST.includes(county) && !(county in COUNTY_MAP)) || EXCLUDED_COUNTY_LIST.includes(county) ) skipThisParcel = true;
+		if(TARGET_COUNTIES === 'all'){
+			// do nothing more
+		} else if(TARGET_COUNTIES === 'some'){
+			if( !TARGET_COUNTY_LIST.includes(county) ) skipThisParcel = true;
+		} else if(TARGET_COUNTIES === 'between'){
 
-		let propertyURL = currentRow[CONFIG.DEV_CONFIG.PROP_URL_IDX];
-		let auditorURL = currentRow[CONFIG.DEV_CONFIG.AUDITOR_URL_IDX];
+			if( !( (TARGET_COUNTY_LIST[0].localeCompare(county) <= 0) && (TARGET_COUNTY_LIST[1].localeCompare(county) >= 0) )) skipThisParcel = true;
+		} else if(TARGET_COUNTIES !== county){
 
-		if(typeof propertyURL !== "string"){
-			if(typeof propertyURL !== "undefined") propertyURL = propertyURL.text;
-			else propertyURL = undefined;
+			skipThisParcel = true;
 		}
-		currentRow[CONFIG.DEV_CONFIG.PROP_URL_IDX] = propertyURL;
-
-		if(typeof auditorURL !== "string"){
-			if(typeof auditorURL !== "undefined") auditorURL = auditorURL.text;
-			else auditorURL = undefined;
+		let scrapedRow, comparisonArray;
+		if(skipThisParcel) {
+			continue; // uncomment this for full report
+			scrapedRow = currentRow;
+			comparisonArray = Array(11).fill(1);
 		}
 
-		currentRow[CONFIG.DEV_CONFIG.AUDITOR_URL_IDX] = auditorURL;
+		else{
 		
-		// console.log(propertyURL);
-		let scrapedInformation = await currentScraper.scrapeByPropertyURL(page, propertyURL);
-		if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
-			console.log('Property URL Invalid. Attempting to access via Parcel Number')
+			if(county in COUNTY_MAP) county = COUNTY_MAP[county];
+			let currentScraperType = SCRAPER_MAP[county];
+			let currentScraper = new currentScraperType();
+
+			let propertyURL = currentRow[CONFIG.DEV_CONFIG.PROP_URL_IDX];
+			let auditorURL = currentRow[CONFIG.DEV_CONFIG.AUDITOR_URL_IDX];
+
 			let parcelNum = currentRow[CONFIG.DEV_CONFIG.PARCEL_IDX];
-			scrapedInformation = await currentScraper.scrapeByAuditorURL(page, auditorURL, ""+parcelNum);
-			if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
-				// Process some fatal error.
-				console.log('Auditor URL Invalid. Skipping.')
+
+
+			if(typeof propertyURL !== "string"){
+				if(typeof propertyURL !== "undefined") propertyURL = propertyURL.text;
+				else propertyURL = undefined;
+			}
+			currentRow[CONFIG.DEV_CONFIG.PROP_URL_IDX] = propertyURL;
+
+			if(typeof auditorURL !== "string"){
+				if(typeof auditorURL !== "undefined") auditorURL = auditorURL.text;
+				else auditorURL = undefined;
+			}
+
+			currentRow[CONFIG.DEV_CONFIG.AUDITOR_URL_IDX] = auditorURL;
+			
+			let scrapedInformation = {};
+			if(numLastLinkErrors === CONFIG.DEV_CONFIG.MAX_LINK_ERRORS){
+				console.log(parcelNum + ' caused error more than ' + CONFIG.DEV_CONFIG.MAX_LINK_ERRORS + ' times. Skipping.')
 				scrapedInformation.scraped_information = [parcelNum].concat(Array(10).fill('ERR'));
 				scrapedInformation.scraped_information[CONFIG.DEV_CONFIG.COUNTY_IDX] = undefined;
 			}
-		}
+			else {
+				scrapedInformation = await currentScraper.scrapeByPropertyURL(page, propertyURL);
+				if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
+					console.log('Property URL Invalid. Attempting to access via Parcel Number')
+					scrapedInformation = await currentScraper.scrapeByAuditorURL(page, auditorURL, ""+parcelNum, browser);
+					// console.log(scrapedInformation);
+					// console.log(scrapedInformation.return_status);
+					if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
+						// Process some fatal error.
+						console.log('Auditor URL Invalid. Aborting.')
+						if(updatedInformation.length > 0){
+							finalpath = await excel.writeToFile(CONFIG.USER_CONFIG.TARGET_DIR, updatedInformation, finalpath);	
+						}
+						await browser.close();
+				
+						return {
+							return_status: scrapedInformation.return_status,
+							remaining_info: worksheetInformation.slice(i),
+							finalpath: finalpath
+						}
+						
+					}
+				}
+			}
 
-		let comparisonArray = [];
-		let scrapedRow = scrapedInformation.scraped_information;
-		for(let i = 0; i < currentRow.length; i++){
-			
-			// console.log(currentRow[i]);
-			// console.log(scrapedRow[i]);
-			// console.log((''+currentRow[i]).charCodeAt(0));
-			// console.log((''+scrapedRow[i]).charCodeAt(0));
-			// console.log(' x ');
+			comparisonArray = [];
+			scrapedRow = scrapedInformation.scraped_information;
+			for(let i = 0; i < currentRow.length; i++){
+				
+				// console.log(currentRow[i]);
+				// console.log(scrapedRow[i]);
+				// console.log((''+currentRow[i]).charCodeAt(0));
+				// console.log((''+scrapedRow[i]).charCodeAt(0));
+				// console.log(' x ');
 
-			if(currentRow[i] !== undefined) currentRow[i] = (''+currentRow[i]).replace(/\s\s+/g,'-').trim();
-			else currentRow[i] = '';
-			if(scrapedRow[i] === undefined) scrapedRow[i] = currentRow[i];
-			// if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).charCodeAt(21) + ' ' + (''+scrapedRow[i]).charCodeAt(22) + ' ' + (''+scrapedRow[i]).charCodeAt(23);
-			if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).replace(/[\u000A]|\s\s+/g,' ').trim();
+				if(currentRow[i] !== undefined) currentRow[i] = (''+currentRow[i]).replace(/\s\s+/g,'-').trim();
+				else currentRow[i] = '';
+				if(scrapedRow[i] === undefined) scrapedRow[i] = currentRow[i];
+				// if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).charCodeAt(21) + ' ' + (''+scrapedRow[i]).charCodeAt(22) + ' ' + (''+scrapedRow[i]).charCodeAt(23);
+				if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).replace(/[\u000A]|\s\s+/g,' ').trim();
+				
+				// console.log(currentRow[i]);
+				// console.log(scrapedRow[i]);
+				// console.log(currentRow[i].charCodeAt(0));
+				// console.log(scrapedRow[i].charCodeAt(0));
+				// console.log(' --- ');
+				comparisonArray.push(currentRow[i] === scrapedRow[i]);
+			}
 			
-			// console.log(currentRow[i]);
-			// console.log(scrapedRow[i]);
-			// console.log(currentRow[i].charCodeAt(0));
-			// console.log(scrapedRow[i].charCodeAt(0));
-			// console.log(' --- ');
-			comparisonArray.push(currentRow[i] === scrapedRow[i]);
+			comparisonArray = comparisonArray.map(b => b ? 0 : 1);
 		}
-		
-		comparisonArray = comparisonArray.map(b => b ? 0 : 1);
 		// let changesFound = !comparisonArray.every(x => x);
 		// if(changesFound) scrapedRow.push("YES");
 		// else scrapedRow.push("NO");
@@ -228,42 +325,15 @@ async function run(start, end, county){
 		updatedInformation.push(scrapedRow);
 	}
 	
-	await excel.writeToFile(CONFIG.USER_CONFIG.TARGET_DIR, updatedInformation);
-	piss();
-
-	let remainingDates, remainingLinks, finalpath, lastErroredLink = '', numLastLinkErrors = 1;
-	let runCycle = require('./counties/'+county+'/runCycle.js');
-	while(true){
-		let returnStatus = await runCycle(start, end, remainingLinks, remainingDates, finalpath);
-		if(returnStatus.code === CONFIG.DEV_CONFIG.SUCCESS_CODE){
-			
-			// log success
-			console.log('Success');
-			return returnStatus; 
-		}
-		// log error
-		console.log(JSON.stringify(returnStatus,null,2));
-		remainingDates = returnStatus.remaining_dates;
-		let erroredLink = returnStatus.remaining_links[0];
-		// If link causes error more than once
-
-		if(erroredLink === lastErroredLink){
-			numLastLinkErrors++;
-			if(numLastLinkErrors > CONFIG.DEV_CONFIG.MAX_LINK_ERRORS){
-				console.log(erroredLink + ' caused error more than ' + CONFIG.DEV_CONFIG.MAX_LINK_ERRORS + ' time. Skipping.');
-				returnStatus.remaining_links.shift();
-				numLastLinkErrors = 1;
-			}
-		} else {
-			numLastLinkErrors = 1;
-		}
-		lastErroredLink = erroredLink;
-		remainingLinks = returnStatus.remaining_links;
-		finalpath = returnStatus.finalpath;
-		console.log('Failed. See above error. Trying again.');
-	}
+	finalpath = await excel.writeToFile(CONFIG.USER_CONFIG.TARGET_DIR, updatedInformation, finalpath);
+	await browser.close();
+	finalpath = excel.appendComplete(finalpath);
+	return {
+		code: CONFIG.DEV_CONFIG.SUCCESS_CODE,
+		finalpath: finalpath
+	};
 	
 }
 
-run(0,0,'delaware');
+run("C:\\Python37\\Programs\\MHPScraper\\Excel\\original.xlsx",false);
 module.exports = run;
