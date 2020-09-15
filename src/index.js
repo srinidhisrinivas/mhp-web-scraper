@@ -33,6 +33,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'henry',
 							'hocking',
 							'huron',
+							'jefferson',
 							'lucas',
 							'marion',
 							'medina',
@@ -45,6 +46,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'summit',
 							'trumbull',
 							'vinton',
+							'warren',
 							'washington',
 							'wood',
 							'wyandot'];
@@ -97,7 +99,7 @@ LAYOUT_COUNTY_LIST.forEach((county) => {
 	SCRAPER_MAP[county] = require('./counties/'+county+'/Scraper.js');
 });
 
-const TARGET_COUNTIES = 'greene'; // all, some, between, or county name;
+const TARGET_COUNTIES = 'warren'; // all, some, between, or county name;
 const TARGET_COUNTY_LIST = ['clermont', 'coshocton']; // list of counties if above is 'some'. start and end counties if above is 'between'
 const EXCLUDED_COUNTY_LIST = []; // to exclude any counties
 
@@ -179,6 +181,7 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 	const page = await browser.newPage();
 
 	const CONFIG = new ConfigReader('delaware');
+	
 	let excel = new ExcelWriter(0, 0, 'delaware');
 	let worksheetInformation;
 	if(remainingInfo !== undefined) worksheetInformation = remainingInfo;
@@ -213,103 +216,108 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 		let county = currentRow[CONFIG.DEV_CONFIG.COUNTY_IDX].toLowerCase().trim();
 
 		// console.log(county);
-		if( (!LAYOUT_COUNTY_LIST.includes(county) && !(county in COUNTY_MAP)) || EXCLUDED_COUNTY_LIST.includes(county) ) continue;
+		let skipThisParcel = false;
+		if( (!LAYOUT_COUNTY_LIST.includes(county) && !(county in COUNTY_MAP)) || EXCLUDED_COUNTY_LIST.includes(county) ) skipThisParcel = true;
 		if(TARGET_COUNTIES === 'all'){
 			// do nothing more
 		} else if(TARGET_COUNTIES === 'some'){
-			if( !TARGET_COUNTY_LIST.includes(county) ) continue;
+			if( !TARGET_COUNTY_LIST.includes(county) ) skipThisParcel = true;
 		} else if(TARGET_COUNTIES === 'between'){
 
-			if( !( (TARGET_COUNTY_LIST[0].localeCompare(county) <= 0) && (TARGET_COUNTY_LIST[1].localeCompare(county) >= 0) )) continue;
-		} else {
-			if(TARGET_COUNTIES !== county){
-				if ( lastCounty === TARGET_COUNTIES ) break;
-				else {
-					lastCounty = county;
-					continue;
-				}
-			} 
+			if( !( (TARGET_COUNTY_LIST[0].localeCompare(county) <= 0) && (TARGET_COUNTY_LIST[1].localeCompare(county) >= 0) )) skipThisParcel = true;
+		} else if(TARGET_COUNTIES !== county){
 
+			skipThisParcel = true;
 		}
-		lastCounty = county;
+		let scrapedRow, comparisonArray;
+		if(skipThisParcel) {
+			continue; // uncomment this for full report
+			scrapedRow = currentRow;
+			comparisonArray = Array(11).fill(1);
+		}
+
+		else{
 		
-		if(county in COUNTY_MAP) county = COUNTY_MAP[county];
-		let currentScraperType = SCRAPER_MAP[county];
-		let currentScraper = new currentScraperType();
+			if(county in COUNTY_MAP) county = COUNTY_MAP[county];
+			let currentScraperType = SCRAPER_MAP[county];
+			let currentScraper = new currentScraperType();
 
-		let propertyURL = currentRow[CONFIG.DEV_CONFIG.PROP_URL_IDX];
-		let auditorURL = currentRow[CONFIG.DEV_CONFIG.AUDITOR_URL_IDX];
+			let propertyURL = currentRow[CONFIG.DEV_CONFIG.PROP_URL_IDX];
+			let auditorURL = currentRow[CONFIG.DEV_CONFIG.AUDITOR_URL_IDX];
 
-		let parcelNum = currentRow[CONFIG.DEV_CONFIG.PARCEL_IDX];
+			let parcelNum = currentRow[CONFIG.DEV_CONFIG.PARCEL_IDX];
 
 
-		if(typeof propertyURL !== "string"){
-			if(typeof propertyURL !== "undefined") propertyURL = propertyURL.text;
-			else propertyURL = undefined;
-		}
-		currentRow[CONFIG.DEV_CONFIG.PROP_URL_IDX] = propertyURL;
+			if(typeof propertyURL !== "string"){
+				if(typeof propertyURL !== "undefined") propertyURL = propertyURL.text;
+				else propertyURL = undefined;
+			}
+			currentRow[CONFIG.DEV_CONFIG.PROP_URL_IDX] = propertyURL;
 
-		if(typeof auditorURL !== "string"){
-			if(typeof auditorURL !== "undefined") auditorURL = auditorURL.text;
-			else auditorURL = undefined;
-		}
+			if(typeof auditorURL !== "string"){
+				if(typeof auditorURL !== "undefined") auditorURL = auditorURL.text;
+				else auditorURL = undefined;
+			}
 
-		currentRow[CONFIG.DEV_CONFIG.AUDITOR_URL_IDX] = auditorURL;
-		
-		let scrapedInformation = {};
-		if(numLastLinkErrors === CONFIG.DEV_CONFIG.MAX_LINK_ERRORS){
-			console.log(parcelNum + ' caused error more than ' + CONFIG.DEV_CONFIG.MAX_LINK_ERRORS + ' times. Skipping.')
-			scrapedInformation.scraped_information = [parcelNum].concat(Array(10).fill('ERR'));
-			scrapedInformation.scraped_information[CONFIG.DEV_CONFIG.COUNTY_IDX] = undefined;
-		}
-		else {
-			scrapedInformation = await currentScraper.scrapeByPropertyURL(page, propertyURL);
-			if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
-				console.log('Property URL Invalid. Attempting to access via Parcel Number')
-				scrapedInformation = await currentScraper.scrapeByAuditorURL(page, auditorURL, ""+parcelNum);
-				if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
-					// Process some fatal error.
-					console.log('Auditor URL Invalid. Aborting.')
-					if(updatedInformation.length > 0){
-						finalpath = await excel.writeToFile(CONFIG.USER_CONFIG.TARGET_DIR, updatedInformation, finalpath);	
-					}
-					await browser.close();
+			currentRow[CONFIG.DEV_CONFIG.AUDITOR_URL_IDX] = auditorURL;
 			
-					return {
-						return_status: scrapedInformation.return_status,
-						remaining_info: worksheetInformation.slice(i),
-						finalpath: finalpath
+			let scrapedInformation = {};
+			if(numLastLinkErrors === CONFIG.DEV_CONFIG.MAX_LINK_ERRORS){
+				console.log(parcelNum + ' caused error more than ' + CONFIG.DEV_CONFIG.MAX_LINK_ERRORS + ' times. Skipping.')
+				scrapedInformation.scraped_information = [parcelNum].concat(Array(10).fill('ERR'));
+				scrapedInformation.scraped_information[CONFIG.DEV_CONFIG.COUNTY_IDX] = undefined;
+			}
+			else {
+				scrapedInformation = await currentScraper.scrapeByPropertyURL(page, propertyURL);
+				if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
+					console.log('Property URL Invalid. Attempting to access via Parcel Number')
+					scrapedInformation = await currentScraper.scrapeByAuditorURL(page, auditorURL, ""+parcelNum, browser);
+					// console.log(scrapedInformation);
+					// console.log(scrapedInformation.return_status);
+					if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
+						// Process some fatal error.
+						console.log('Auditor URL Invalid. Aborting.')
+						if(updatedInformation.length > 0){
+							finalpath = await excel.writeToFile(CONFIG.USER_CONFIG.TARGET_DIR, updatedInformation, finalpath);	
+						}
+						await browser.close();
+				
+						return {
+							return_status: scrapedInformation.return_status,
+							remaining_info: worksheetInformation.slice(i),
+							finalpath: finalpath
+						}
+						
 					}
-					
 				}
 			}
-		}
 
-		let comparisonArray = [];
-		let scrapedRow = scrapedInformation.scraped_information;
-		for(let i = 0; i < currentRow.length; i++){
-			
-			// console.log(currentRow[i]);
-			// console.log(scrapedRow[i]);
-			// console.log((''+currentRow[i]).charCodeAt(0));
-			// console.log((''+scrapedRow[i]).charCodeAt(0));
-			// console.log(' x ');
+			comparisonArray = [];
+			scrapedRow = scrapedInformation.scraped_information;
+			for(let i = 0; i < currentRow.length; i++){
+				
+				// console.log(currentRow[i]);
+				// console.log(scrapedRow[i]);
+				// console.log((''+currentRow[i]).charCodeAt(0));
+				// console.log((''+scrapedRow[i]).charCodeAt(0));
+				// console.log(' x ');
 
-			if(currentRow[i] !== undefined) currentRow[i] = (''+currentRow[i]).replace(/\s\s+/g,'-').trim();
-			else currentRow[i] = '';
-			if(scrapedRow[i] === undefined) scrapedRow[i] = currentRow[i];
-			// if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).charCodeAt(21) + ' ' + (''+scrapedRow[i]).charCodeAt(22) + ' ' + (''+scrapedRow[i]).charCodeAt(23);
-			if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).replace(/[\u000A]|\s\s+/g,' ').trim();
+				if(currentRow[i] !== undefined) currentRow[i] = (''+currentRow[i]).replace(/\s\s+/g,'-').trim();
+				else currentRow[i] = '';
+				if(scrapedRow[i] === undefined) scrapedRow[i] = currentRow[i];
+				// if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).charCodeAt(21) + ' ' + (''+scrapedRow[i]).charCodeAt(22) + ' ' + (''+scrapedRow[i]).charCodeAt(23);
+				if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).replace(/[\u000A]|\s\s+/g,' ').trim();
+				
+				// console.log(currentRow[i]);
+				// console.log(scrapedRow[i]);
+				// console.log(currentRow[i].charCodeAt(0));
+				// console.log(scrapedRow[i].charCodeAt(0));
+				// console.log(' --- ');
+				comparisonArray.push(currentRow[i] === scrapedRow[i]);
+			}
 			
-			// console.log(currentRow[i]);
-			// console.log(scrapedRow[i]);
-			// console.log(currentRow[i].charCodeAt(0));
-			// console.log(scrapedRow[i].charCodeAt(0));
-			// console.log(' --- ');
-			comparisonArray.push(currentRow[i] === scrapedRow[i]);
+			comparisonArray = comparisonArray.map(b => b ? 0 : 1);
 		}
-		
-		comparisonArray = comparisonArray.map(b => b ? 0 : 1);
 		// let changesFound = !comparisonArray.every(x => x);
 		// if(changesFound) scrapedRow.push("YES");
 		// else scrapedRow.push("NO");
