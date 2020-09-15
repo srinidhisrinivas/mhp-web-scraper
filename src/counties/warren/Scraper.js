@@ -104,39 +104,34 @@ let Scraper = function(){
 		// const parcelIDString = (await (await (await page.$('.DataletHeaderTopLeft')).getProperty('innerText')).jsonValue());
 		// const parcelID = parcelIDString.substring(parcelIDString.indexOf(':')+2);
 
-		let owner1Handle = await page.$('span#ctl00_ContentPlaceHolderMainContent_lblSummaryCurrentOwner');
-		let prop = await owner1Handle.getProperty('innerText');
 		
-		let baseOwnerName = await prop.jsonValue();
 
-
+		let allTableData = await this.getTableDataBySelector(page, "table.w-100 tr", false);
+		let ownerTableData = allTableData.filter(row => row.includes('Current Owner'))[0];
+		let baseOwnerName = ownerTableData[ownerTableData.indexOf('Current Owner') + 1];
 		console.log(baseOwnerName);
 
+		// let amtTableData = allTableData.filter(row => row.includes('Last Sale Amount'))[0];
+		// let transferAmount = amtTableData[amtTableData.indexOf('Last Sale Amount') + 1];
 
-		let amtHandle = await page.$('span#ctl00_ContentPlaceHolderMainContent_lblNoBldgLastSaleAmount');
-		prop = await amtHandle.getProperty('innerText');
-		let transferAmount = await prop.jsonValue();
+		// let dateTableData = allTableData.filter(row => row.includes('Last Sale Date'))[0];
+		// let transferDate = dateTableData[dateTableData.indexOf('Last Sale Date') + 1];
 
-		let dateHandle = await page.$('span#ctl00_ContentPlaceHolderMainContent_lblNoBldgLastSaleDate');
-		prop = await dateHandle.getProperty('innerText');
-		let transferDate = await prop.jsonValue();
+		// if(transferAmount.trim() !== '') transferAmount = parseInt(transferAmount.replace(/[,\$]/g, ''));
+		// else transferAmount = undefined;
+		// if(transferDate.trim() !== '') transferDate = DateHandler.formatDate(new Date(transferDate));
+		// else transferAmount = undefined;
 
+		// console.log(transferAmount);
+		// console.log(transferDate);
 
-		if(transferAmount.trim() !== '') transferAmount = parseInt(transferAmount.replace(/[,\$]/g, ''));
-		else transferAmount = undefined;
-		if(transferDate.trim() !== '') transferDate = DateHandler.formatDate(new Date(transferDate));
-		else transferAmount = undefined;
-
-		console.log(transferAmount);
-		console.log(transferDate);
-
-		let scrapedInfo = [undefined, transferDate, transferAmount, baseOwnerName, undefined, undefined, undefined, undefined, undefined, undefined, undefined]; 
+		let scrapedInfo = [undefined, undefined, undefined, baseOwnerName, undefined, undefined, undefined, undefined, undefined, undefined, undefined]; 
 
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			try{
 				await page.click("a#ctl00_ContentPlaceHolderMainContent_lbTaxInfo");
 				await page.waitFor(200);
-				await page.waitForSelector("div#ctl00_ContentPlaceHolderMainContent_panTaxInfo". {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+				await page.waitForSelector("div#ctl00_ContentPlaceHolderMainContent_panTaxInfo", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 				await page.waitFor(200);
 			}
 			catch(e){
@@ -156,9 +151,44 @@ let Scraper = function(){
 			prop = await taxInfoHandle.getProperty('innerText');
 			let taxInfo = await prop.jsonValue();
 
-			console.log(taxInfo);
-			piss();
-			let dates = conveyanceTableData.map(row => new Date(row[0]));
+			taxInfo = taxInfo.split('\n');
+
+			taxInfo = taxInfo.slice(taxInfo.indexOf('Tax Mailing Address') + 1, taxInfo.indexOf('Tax Info'));
+
+
+			let taxName = taxInfo.shift();
+			let taxAddress = taxInfo.join(' ');
+			
+			console.log(taxName);
+			console.log(taxAddress);
+
+			scrapedInfo[CONFIG.DEV_CONFIG.TAX_OWNER_IDX] = taxName;
+			scrapedInfo[CONFIG.DEV_CONFIG.TAX_ADDRESS_IDX] = taxAddress;
+		}
+
+		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
+			try{
+				await page.click("a#ctl00_ContentPlaceHolderMainContent_lbSalesHistory");
+				await page.waitFor(200);
+				await page.waitForSelector("table.w-100.table", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+				await page.waitFor(200);
+			}
+			catch(e){
+				console.log(e);
+				console.log('Unable to visit tax info. Attempt #' + visitAttemptCount);
+				await page.goto(propertyURL);
+
+				continue;
+			}
+			break;	
+		}
+		if(visitAttemptCount === CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS){
+			console.log('Failed to reach tax info. Giving up.');
+			
+		} else {
+			let salesTableData = await this.getTableDataBySelector(page, 'table.w-100.table tr', false);
+			salesTableData.shift();
+			let dates = salesTableData.map(row => new Date(row[0]));
 			let maxDateIdx = 0;
 			for(let i = 1; i < dates.length; i++){
 				let currDate = dates[i];
@@ -166,25 +196,25 @@ let Scraper = function(){
 					maxDateIdx = i;
 				}
 			}
-
-			let latestTransferData = conveyanceTableData[maxDateIdx];
-			let transferDate = '', transferAmount = '';
-			if(latestTransferData !== undefined){
-				
-				transferDate = latestTransferData[0];
-
-				transferAmount = latestTransferData[2];
+			let latestSaleData = salesTableData[maxDateIdx];
+			
+			let transferAmount = '', transferDate = '';
+			if(latestSaleData !== undefined){
+				transferAmount = latestSaleData[3];
+				transferDate = latestSaleData[0];
 			}
+			
 			if(transferAmount.trim() !== '') transferAmount = parseInt(transferAmount.replace(/[,\$]/g, ''));
 			else transferAmount = undefined;
 			if(transferDate.trim() !== '') transferDate = DateHandler.formatDate(new Date(transferDate));
-			else transferDate = undefined;
+			else transferAmount = undefined;
 
 			console.log(transferAmount);
 			console.log(transferDate);
+			
 
-			scrapedInfo[CONFIG.DEV_CONFIG.DATE_IDX] = transferDate;
 			scrapedInfo[CONFIG.DEV_CONFIG.PRICE_IDX] = transferAmount;
+			scrapedInfo[CONFIG.DEV_CONFIG.DATE_IDX] = transferDate;
 		}
 
 		
@@ -209,8 +239,6 @@ let Scraper = function(){
 			}
 		}
 		
-		let prefixLength = 13 - parcelID.length;
-		if(prefixLength > 0) parcelID = "0".repeat(prefixLength) + parcelID;
 
 		let visitAttemptCount;
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
@@ -222,7 +250,7 @@ let Scraper = function(){
 				await page.type('input#ctl00_ContentPlaceHolderMainContent_txtParcelID', parcelID);
 				await page.waitFor(200);
 
-				const searchButton = await page.$('a#ctl00_ContentPlaceHolderMainContent_btnParcel');
+				const searchButton = await page.$('input#ctl00_ContentPlaceHolderMainContent_btnParcel');
 				await searchButton.click();
 
 				await page.waitFor(200);
