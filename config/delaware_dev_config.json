@@ -16,7 +16,7 @@
 	"RECORDER_TARGET_URL" : "https://cotthosting.com/ohdelaware/User/Login.aspx",
 	"AUDITOR_TARGET_URL" : "http://delaware-auditor-ohio.manatron.com/PropNum.aspx",
 	"POST_RESPONSE_TIMEOUT_MSEC" : 18000000,
-	"PARCEL_TIMEOUT_MSEC" : 10000,
+	"PARCEL_TIMEOUT_MSEC" : 15000,
 	"ACK_TIMEOUT_MSEC" : 1000,
 	"SEARCH_TIMEOUT_MSEC" : 5000,
 	"ERROR_LOG_FILE" : "logs/delaware_error_log.txt",

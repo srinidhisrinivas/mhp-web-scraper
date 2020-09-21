@@ -15,6 +15,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'brown',
 							'butler',
 							'champaign',
+							'clark',
 							'clermont',
 							'clinton',
 							'coshocton',
@@ -34,6 +35,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'hocking',
 							'huron',
 							'jefferson',
+							'licking',
 							'lucas',
 							'marion',
 							'medina',
@@ -42,6 +44,7 @@ const LAYOUT_COUNTY_LIST = ['adams',
 							'ottawa',
 							'richland',
 							'ross',
+							'shelby',
 							'stark',
 							'summit',
 							'trumbull',
@@ -99,7 +102,7 @@ LAYOUT_COUNTY_LIST.forEach((county) => {
 	SCRAPER_MAP[county] = require('./counties/'+county+'/Scraper.js');
 });
 
-const TARGET_COUNTIES = 'warren'; // all, some, between, or county name;
+const TARGET_COUNTIES = 'licking'; // all, some, between, or county name;
 const TARGET_COUNTY_LIST = ['clermont', 'coshocton']; // list of counties if above is 'some'. start and end counties if above is 'between'
 const EXCLUDED_COUNTY_LIST = []; // to exclude any counties
 
@@ -179,6 +182,7 @@ async function run(infilepath, headless){
 async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastLinkErrors){
 	const browser = await puppeteer.launch({headless: headless});
 	const page = await browser.newPage();
+	// page.on('console', (log) => console[log._type](log._text));
 
 	const CONFIG = new ConfigReader('delaware');
 	
