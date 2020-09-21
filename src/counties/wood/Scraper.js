@@ -133,8 +133,10 @@ let Scraper = function(){
 		console.log(taxName);
 		console.log(taxAddress);
 
-		let salesTableData = await this.getTableDataBySelector(page, "table#ctlBodyPane_ctl08_ctl01_grdTransferHistory > tbody > tr",false);
+		let salesTableData = await this.getTableDataBySelector(page, "table[id*='TransferHistory'] > tbody > tr",false);
+		// console.log(salesTableData);
 		salesTableData = salesTableData.shift();
+		// console.log(salesTableData);
 		let transferAmount = '', transferDate = '';
 		if(salesTableData !== undefined){
 			transferAmount = salesTableData[1];
