@@ -126,7 +126,7 @@ let Scraper = function(){
 		mailingDivText = mailingDivText.split('\n');
 		mailingDivText = mailingDivText.filter(e => e === e.toUpperCase());
 
-		console.log(mailingDivText);
+		// console.log(mailingDivText);
 
 		let taxName = mailingDivText.shift();
 		let taxAddress = mailingDivText.join(' ');
@@ -135,33 +135,38 @@ let Scraper = function(){
 		console.log(taxName);
 		console.log(taxAddress);
 
-		let conveyanceTableData = ownerTableData.filter(row => row.some(e => e.includes('$')) && row.some(e => e.match(/\/[0-9]*\//)));
+		let conveyanceTableData = ownerTableData.filter(row => row.some(e => !e.includes('(') && e.includes('$')) && row.some(e => e.match(/\/[0-9]*\//)));
 		
-		let dates = conveyanceTableData.map(row => new Date(row[2]));
-		let maxDateIdx = 0;
-		for(let i = 1; i < dates.length; i++){
-			let currDate = dates[i];
-			if(currDate >= dates[maxDateIdx]){
-				maxDateIdx = i;
+		let transferAmount='', transferDate='';
+		if(conveyanceTableData.length > 0){
+			let dates = conveyanceTableData.map(row => new Date(row[2]));
+			let maxDateIdx = 0;
+			for(let i = 1; i < dates.length; i++){
+				let currDate = dates[i];
+				if(currDate >= dates[maxDateIdx]){
+					maxDateIdx = i;
+				}
 			}
-		}
 
-		let latestTransferData = conveyanceTableData[maxDateIdx];
-		console.log(latestTransferData);
-		// console.log(latestTransferData);
-		let transferDate = '', transferAmount = '';
-		if(latestTransferData !== undefined){
-			
-			transferDate = latestTransferData[0];
+			let latestTransferData = conveyanceTableData[maxDateIdx];
+			// console.log(latestTransferData);
+			// console.log(latestTransferData);
+			if(latestTransferData !== undefined){
+				
+				transferDate = latestTransferData[0];
 
-			transferAmount = latestTransferData[1];
-			
-			// console.log(transferAmount);
+				transferAmount = latestTransferData[1];
+				
+				// console.log(transferAmount);
+			}	
 		}
+		
 		if(transferAmount.trim() !== '') transferAmount = parseInt(transferAmount.replace(/[,\$]/g, ''));
 		else transferAmount = undefined;
 		if(transferDate.trim() !== '') transferDate = DateHandler.formatDate(new Date(transferDate));
 		else transferDate = undefined;
+
+		if(isNaN(transferAmount)) transferAmount = undefined;
 
 		console.log(transferDate);
 		console.log(transferAmount);
@@ -184,6 +189,7 @@ let Scraper = function(){
 				return_status: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE
 			}
 		}
+		parcelID = parcelID.replace(/[\*\.]/g,'');
 
 		let prefixLength = 16 - parcelID.length;
 		if(prefixLength >= 0) parcelID = "0".repeat(prefixLength) + parcelID;
@@ -208,7 +214,7 @@ let Scraper = function(){
 
 				throw "Nav bar Toggle Clicked";
 			} catch(e){
-				console.log(e);
+				// console.log(e);
 
 				try{
 					await page.waitFor(200);

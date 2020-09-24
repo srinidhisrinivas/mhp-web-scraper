@@ -68,7 +68,8 @@ let Scraper = function(){
 
 
 	this.scrapeByPropertyURL = async function(page, propertyURL){
-		if(propertyURL === undefined){
+		// console.log('Property URL: '+propertyURL)
+		if(propertyURL === undefined || propertyURL.trim() === ''){
 			return {
 				scraped_information: [],
 				return_status: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE

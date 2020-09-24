@@ -102,8 +102,8 @@ LAYOUT_COUNTY_LIST.forEach((county) => {
 	SCRAPER_MAP[county] = require('./counties/'+county+'/Scraper.js');
 });
 
-const TARGET_COUNTIES = 'some'; // all, some, between, or county name;
-const TARGET_COUNTY_LIST = ['clermont', 'coshocton']; // list of counties if above is 'some'. start and end counties if above is 'between'
+const TARGET_COUNTIES = 'meigs'; // all, some, between, or county name;
+const TARGET_COUNTY_LIST = ['ashtabula', 'athens']; // list of counties if above is 'some'. start and end counties if above is 'between'
 const EXCLUDED_COUNTY_LIST = []; // to exclude any counties
 
 /*
@@ -135,10 +135,14 @@ completed_counties = ['adams',
 						'hocking'];
 
 */
+let numErrors = 0;
 
 async function run(infilepath, headless){
 	const CONFIG = new ConfigReader('delaware');
 	let remainingInfo, finalpath, lastErroredParcel = '', numLastLinkErrors = 1;
+	console.log('Starting at:');
+	let beginTime = new Date();
+	console.log(beginTime.toString() + '\n');
 	headless = (headless === 'true');
 	while(true){
 		
@@ -150,6 +154,10 @@ async function run(infilepath, headless){
 			// log success
 			console.log('Success');
 			console.log('Output file is: ' + returnStatus.finalpath);
+			console.log('\nFinished at:');
+			let endTime = new Date();
+			console.log(endTime.toString() + '\n');
+			console.log('Number of errors: ' + numErrors);
 			return returnStatus; 
 		} else if(returnStatus.code === CONFIG.DEV_CONFIG.FILE_READ_ERROR_CODE){
 			numLastLinkErrors++;
@@ -160,15 +168,17 @@ async function run(infilepath, headless){
 			}
 		} else {
 			// console.log(JSON.stringify(returnStatus,null,2));	
-			let erroredParcel = returnStatus.remaining_info[CONFIG.DEV_CONFIG.PARCEL_IDX];
+			// console.log(returnStatus.remaining_info);
+			let erroredParcel = returnStatus.remaining_info[0][CONFIG.DEV_CONFIG.PARCEL_IDX];
 			// If link causes error more than once
-
+			// console.log(erroredParcel);
 			if(erroredParcel === lastErroredParcel){
 				numLastLinkErrors++;
 				
 			} else {
 				numLastLinkErrors = 1;
 			}
+			// console.log(numLastLinkErrors);
 			lastErroredParcel = erroredParcel;
 			remainingInfo = returnStatus.remaining_info;
 			finalpath = returnStatus.finalpath;
@@ -177,6 +187,7 @@ async function run(infilepath, headless){
 		// log error
 		
 	}
+	
 	
 }
 async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastLinkErrors){
@@ -202,11 +213,10 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 			}
 		}
 	}
-	// console.log(worksheetInformation);
 	
 	let updatedInformation = [];
 	let lastCounty = worksheetInformation[0][CONFIG.DEV_CONFIG.COUNTY_IDX];
-	for(let i = 1; i < worksheetInformation.length; i++){
+	for(let i = 0; i < worksheetInformation.length; i++){
 
 
 		let currentRow = worksheetInformation[i];
@@ -216,8 +226,9 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 		} else if(typeof currentRow[CONFIG.DEV_CONFIG.DATE_IDX] === "object"){
 			currentRow[CONFIG.DEV_CONFIG.DATE_IDX] = DateHandler.formatDate(DateHandler.incrementDate(new Date(currentRow[CONFIG.DEV_CONFIG.DATE_IDX])));
 		}
-
-		let county = currentRow[CONFIG.DEV_CONFIG.COUNTY_IDX].toLowerCase().trim();
+		// console.log(currentRow);
+		let county = currentRow[CONFIG.DEV_CONFIG.COUNTY_IDX];
+		if(county) county = county.toLowerCase().trim();
 
 		// console.log(county);
 		let skipThisParcel = false;
@@ -250,7 +261,7 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 			let auditorURL = currentRow[CONFIG.DEV_CONFIG.AUDITOR_URL_IDX];
 
 			let parcelNum = currentRow[CONFIG.DEV_CONFIG.PARCEL_IDX];
-
+			// console.log(currentRow);
 
 			if(typeof propertyURL !== "string"){
 				if(typeof propertyURL !== "undefined") propertyURL = propertyURL.text;
@@ -270,30 +281,54 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 				console.log(parcelNum + ' caused error more than ' + CONFIG.DEV_CONFIG.MAX_LINK_ERRORS + ' times. Skipping.')
 				scrapedInformation.scraped_information = [parcelNum].concat(Array(10).fill('ERR'));
 				scrapedInformation.scraped_information[CONFIG.DEV_CONFIG.COUNTY_IDX] = undefined;
+				numErrors++;
+				numLastLinkErrors = 1;
 			}
 			else {
-				scrapedInformation = await currentScraper.scrapeByPropertyURL(page, propertyURL);
-				if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
-					console.log('Property URL Invalid. Attempting to access via Parcel Number')
-					scrapedInformation = await currentScraper.scrapeByAuditorURL(page, auditorURL, ""+parcelNum, browser);
-					// console.log(scrapedInformation);
-					// console.log(scrapedInformation.return_status);
+				try{
+					scrapedInformation = await currentScraper.scrapeByPropertyURL(page, propertyURL);
 					if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
-						// Process some fatal error.
-						console.log('Auditor URL Invalid. Aborting.')
-						if(updatedInformation.length > 0){
-							finalpath = await excel.writeToFile(CONFIG.USER_CONFIG.TARGET_DIR, updatedInformation, finalpath);	
+						console.log('\nProperty URL Invalid. Attempting to access via Parcel Number')
+						if((''+parcelNum).trim() === '') {
+							scrapedInformation  = {
+								return_status: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE,
+								scaped_information: []
+							};
 						}
-						await browser.close();
-				
-						return {
-							return_status: scrapedInformation.return_status,
-							remaining_info: worksheetInformation.slice(i),
-							finalpath: finalpath
+						else scrapedInformation = await currentScraper.scrapeByAuditorURL(page, auditorURL, ""+parcelNum, browser);
+						// console.log(scrapedInformation);
+						// console.log(scrapedInformation.return_status);
+						if(scrapedInformation.return_status == CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE){
+							// Process some fatal error.
+							console.log('Auditor URL Invalid. Aborting.')
+							if(updatedInformation.length > 0){
+								finalpath = await excel.writeToFile(CONFIG.USER_CONFIG.TARGET_DIR, updatedInformation, finalpath);	
+							}
+							await browser.close();
+					
+							return {
+								return_status: scrapedInformation.return_status,
+								remaining_info: worksheetInformation.slice(i),
+								finalpath: finalpath
+							}
+							
 						}
-						
 					}
+				} catch(e){
+					console.log(e);
+					if(updatedInformation.length > 0){
+						finalpath = await excel.writeToFile(CONFIG.USER_CONFIG.TARGET_DIR, updatedInformation, finalpath);	
+					}
+					await browser.close();
+					
+					return {
+						return_status: scrapedInformation.return_status,
+						remaining_info: worksheetInformation.slice(i),
+						finalpath: finalpath
+					}
+
 				}
+				
 			}
 
 			comparisonArray = [];
@@ -306,17 +341,32 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 				// console.log((''+scrapedRow[i]).charCodeAt(0));
 				// console.log(' x ');
 
-				if(currentRow[i] !== undefined) currentRow[i] = (''+currentRow[i]).replace(/\s\s+/g,'-').trim();
+				if(currentRow[i] !== undefined) currentRow[i] = (''+currentRow[i]).replace(/[\u000A\u00A0]|\s\s+/g,' ').trim();
 				else currentRow[i] = '';
 				if(scrapedRow[i] === undefined) scrapedRow[i] = currentRow[i];
 				// if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).charCodeAt(21) + ' ' + (''+scrapedRow[i]).charCodeAt(22) + ' ' + (''+scrapedRow[i]).charCodeAt(23);
-				if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).replace(/[\u000A]|\s\s+/g,' ').trim();
+				if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).replace(/[\u000A\u00A0]|\s\s+/g,' ').trim();
 				
-				// console.log(currentRow[i]);
-				// console.log(scrapedRow[i]);
-				// console.log(currentRow[i].charCodeAt(0));
-				// console.log(scrapedRow[i].charCodeAt(0));
-				// console.log(' --- ');
+				console.log(currentRow[i]);
+				console.log(scrapedRow[i]);
+
+				let firstArray = [], secondArray = [];
+				 if(currentRow[i] !== undefined){
+				 	for(let j = 0; j < currentRow[i].length; j++){
+				 		firstArray.push(currentRow[i].charCodeAt(j));	
+				 	}
+				 }
+				 if(scrapedRow[i] !== undefined){
+				 	for(let j = 0; j < scrapedRow[i].length; j++){
+				 		secondArray.push(scrapedRow[i].charCodeAt(j));	
+				 	}	
+				}
+					
+				
+				console.log(firstArray);
+				 console.log(secondArray);
+				 console.log(' --- ');
+				console.log(currentRow[i] === scrapedRow[i]);
 				comparisonArray.push(currentRow[i] === scrapedRow[i]);
 			}
 			
@@ -339,5 +389,5 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 	
 }
 
-run("C:\\Python37\\Programs\\MHPScraper\\Excel\\original.xlsx",false);
+run("C:\\Python37\\Programs\\MHPScraper\\Excel\\orig2.xlsx",false);
 module.exports = run;

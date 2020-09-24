@@ -230,7 +230,7 @@ let Scraper = function(){
 			catch(e){
 				// console.log(e);
 				try{
-					await page.waitForSelector("div.tabsmenu > table > tbody > tr > td > table > tbody > tr > td > a");
+					await page.waitForSelector("div.tabsmenu > table > tbody > tr > td > table > tbody > tr > td > a", {timeout: CONFIG.DEV_CONFIG.SEARCH_TIMEOUT_MSEC});
 					let sideMenu = await page.$$("div.tabsmenu > table > tbody > tr > td > table > tbody > tr > td > a");
 					let transferTag;
 					for(let i = 0; i < sideMenu.length; i++){

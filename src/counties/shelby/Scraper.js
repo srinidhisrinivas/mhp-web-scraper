@@ -68,7 +68,7 @@ let Scraper = function(){
 	}
 
 
-	this.scrapeByPropertyURL = async function(page, propertyURL, parcelID){
+	this.scrapeByPropertyURL = async function(page, propertyURL, parcelID, fromBrowser){
 		if(propertyURL === undefined){
 			return {
 				scraped_information: [],
@@ -81,6 +81,7 @@ let Scraper = function(){
 			
 			try{
 				
+				if(!fromBrowser) await page.goto(propertyURL);
 				await page.waitForSelector("div#loading.hidden", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 				await page.waitFor(200);
 				// await page.waitForSelector("div[id*='uniqName'] span.col-xs-7", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
@@ -89,7 +90,7 @@ let Scraper = function(){
 			catch(e){
 				// console.log(e);
 				console.log('Unable to visit ' + propertyURL + '. Attempt #' + visitAttemptCount);
-				await page.goto(propertyURL);
+				if(fromBrowser) await page.goto(propertyURL);
 				continue;
 			}
 		
@@ -164,7 +165,7 @@ let Scraper = function(){
 		let scrapedInfo = [undefined, transferDate, transferAmount, ownerNames, undefined, undefined, taxName, taxAddress, undefined, undefined, undefined]; 
 
 		console.log('\n');
-		await page.close();
+		if(fromBrowser) await page.close();
 
 		return {
 			scraped_information: scrapedInfo,
@@ -297,7 +298,7 @@ let Scraper = function(){
 		
 		// let propertyURL = page.url();
 		// console.log(propertyURL);
-		let scrapedInfo = await this.scrapeByPropertyURL(propertyPage, propertyURL, parcelID);
+		let scrapedInfo = await this.scrapeByPropertyURL(propertyPage, propertyURL, parcelID, true);
 		scrapedInfo.scraped_information[CONFIG.DEV_CONFIG.PROP_URL_IDX] = propertyURL;
 		
 		return {

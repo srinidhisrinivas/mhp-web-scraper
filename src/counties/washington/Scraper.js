@@ -236,7 +236,7 @@ let Scraper = function(){
 			catch(e){
 				// console.log(e);
 				try{
-					await page.waitForSelector("div.tabsmenu > table > tbody > tr > td > table > tbody > tr > td > a");
+					await page.waitForSelector("div.tabsmenu > table > tbody > tr > td > table > tbody > tr > td > a", {timeout: CONFIG.DEV_CONFIG.SEARCH_TIMEOUT_MSEC});
 					let sideMenu = await page.$$("div.tabsmenu > table > tbody > tr > td > table > tbody > tr > td > a");
 					let transferTag;
 					for(let i = 0; i < sideMenu.length; i++){
@@ -244,7 +244,7 @@ let Scraper = function(){
 						let prop = await handle.getProperty('innerText');
 						let propJSON = await prop.jsonValue();
 						if(propJSON === 'Parcel') transferTag = handle;
-						console.log(propJSON);
+						// console.log(propJSON);
 					}
 					await transferTag.click();
 					await page.waitForSelector("input#ContentPlaceHolder1_Parcel_tbParcelNumber");

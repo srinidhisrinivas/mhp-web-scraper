@@ -78,15 +78,25 @@ let Scraper = function(){
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			try{
 				await page.goto(propertyURL);
-			
-				await page.waitForSelector("section#ctlBodyPane_ctl01_mSection", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+				await page.waitForSelector("div.modal-footer > a.btn", {timeout: CONFIG.DEV_CONFIG.ACK_TIMEOUT_MSEC});
 				await page.waitFor(200);
+				let ackButton = await page.$("div.modal-footer > a.btn");
+				await ackButton.click();
+				await page.waitFor(200);
+				throw "Acknowledge Button Clicked";
+				
 			}
 			catch(e){
-				// console.log(e);
-				console.log('Unable to visit ' + propertyURL + '. Attempt #' + visitAttemptCount);
-				continue;
+				try{
+					await page.waitForSelector("section#ctlBodyPane_ctl01_mSection", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
+					await page.waitFor(200);
+				} catch(e){
+					// console.log(e);
+					console.log('Unable to visit ' + propertyURL + '. Attempt #' + visitAttemptCount);
+					continue;
+				}
 			}
+			
 			
 			
 			break;	

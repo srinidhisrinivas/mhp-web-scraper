@@ -70,7 +70,7 @@ let Scraper = function(){
 	}
 
 
-	this.scrapeByPropertyURL = async function(page, propertyURL, parcelID){
+	this.scrapeByPropertyURL = async function(page, propertyURL, parcelID, fromBrowser){
 		if(propertyURL === undefined){
 			return {
 				scraped_information: [],
@@ -81,13 +81,14 @@ let Scraper = function(){
 		for(visitAttemptCount = 0; visitAttemptCount < CONFIG.DEV_CONFIG.MAX_VISIT_ATTEMPTS; visitAttemptCount++){
 			
 			try{
+				if(!fromBrowser) await page.goto(propertyURL);
 				await page.waitForSelector("a[href='#SalesData']", {timeout: CONFIG.DEV_CONFIG.PARCEL_TIMEOUT_MSEC});
 				await page.waitFor(200);
 			}
 			catch(e){
 				// console.log(e);
 				console.log('Unable to visit ' + propertyURL + '. Attempt #' + visitAttemptCount);
-				await page.goto(propertyURL);
+				if(fromBrowser) await page.goto(propertyURL);
 
 				continue;
 			}
@@ -187,7 +188,7 @@ let Scraper = function(){
 		}
 		
 		console.log('\n');
-		await page.close();
+		if(fromBrowser) await page.close();
 		return {
 			scraped_information: scrapedInfo,
 			return_status: CONFIG.DEV_CONFIG.SUCCESS_CODE
@@ -275,7 +276,7 @@ let Scraper = function(){
 		}
 		// console.log(propertyURL);
 		// console.log('Making a call to property');
-		let scrapedInfo = await this.scrapeByPropertyURL(propertyPage, propertyURL, parcelID);
+		let scrapedInfo = await this.scrapeByPropertyURL(propertyPage, propertyURL, parcelID, true);
 		scrapedInfo.scraped_information[CONFIG.DEV_CONFIG.PROP_URL_IDX] = propertyURL;
 		
 		return {

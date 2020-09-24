@@ -118,7 +118,7 @@ let Scraper = function(){
 
 		const conveyanceTableData = await this.getTableDataBySelector(page, "table[id*='Sale'] tr", false);
 		conveyanceTableData.pop();
-		console.log(conveyanceTableData);
+		// console.log(conveyanceTableData);
 		transferAmount = await this.getInfoFromTableByRowHeader(conveyanceTableData, 'Sale Amount');
 		transferDate = await this.getInfoFromTableByRowHeader(conveyanceTableData, 'Sales Date');
 

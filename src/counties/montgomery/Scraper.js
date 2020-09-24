@@ -118,7 +118,7 @@ let Scraper = function(){
 		console.log(ownerAddress);
 		
 		let saleTableData = await this.getTableDataBySelector(page, "table#Sales tr",false);
-		console.log(saleTableData);
+		// console.log(saleTableData);
 		saleTableData.shift();
 		saleTableData.pop();
 
