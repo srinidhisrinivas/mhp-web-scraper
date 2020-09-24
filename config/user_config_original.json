@@ -1,0 +1,10 @@
+{
+	"TARGET_DIR" : "C:\\Python37\\Programs\\MHPScraper\\Excel",
+	"DEFAULT_TARGET_DIR" : "C:\\Python37\\Programs\\MHPScraper\\Excel",
+	"SOURCE_FILE" : "C:\\Python37\\Programs\\MHPScraper\\Excel\\orig2.xlsx",
+	"DEFAULT_SOURCE_FILE" : "",
+	"RUN_TYPE" : "all",
+	"BETW_1" : "adams",
+	"BETW_2" : "wyandot",
+	"ONE" : "adams"
+}
