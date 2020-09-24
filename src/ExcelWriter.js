@@ -2,11 +2,10 @@ const Excel = require('exceljs');
 const ConfigReader = require('./ConfigReader.js');
 const ERROR_LOGGER = require("./ErrorLogger.js");
 
-let ExcelWriter = function(start, end, county){
-	const CONFIG = new ConfigReader(county);
+let ExcelWriter = function(start, end){
+	const CONFIG = new ConfigReader();
 	this.startDate = start;
 	this.endDate = end;
-	this.county = county;
 	this.writeToFile = async (filepath, information, finalpath) => {
 
 		console.log(finalpath);

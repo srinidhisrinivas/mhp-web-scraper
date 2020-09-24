@@ -7,6 +7,14 @@ const InfoParser = require('./InfoParser.js');
 // const Scraper = require('./Scraper.js');
 // const DelScraper = require('./DelScraper.js');
 const ConfigReader = require('./ConfigReader.js');
+const CONFIG = new ConfigReader();
+const RUN_TYPE = CONFIG.USER_CONFIG.RUN_TYPE; // all, some, between, or one;
+const BETW_1 = CONFIG.USER_CONFIG.BETW_1; // list of counties if above is 'some'. start and end counties if above is 'between'. one county name if above is one
+const BETW_2 = CONFIG.USER_CONFIG.BETW_2;
+const ONE = CONFIG.USER_CONFIG.ONE;
+const EXCLUDED_COUNTY_LIST = []; // to exclude any counties
+
+
 const LAYOUT_COUNTY_LIST = ['adams',
 							'allen',
 							'ashtabula',
@@ -102,9 +110,6 @@ LAYOUT_COUNTY_LIST.forEach((county) => {
 	SCRAPER_MAP[county] = require('./counties/'+county+'/Scraper.js');
 });
 
-const TARGET_COUNTIES = 'meigs'; // all, some, between, or county name;
-const TARGET_COUNTY_LIST = ['ashtabula', 'athens']; // list of counties if above is 'some'. start and end counties if above is 'between'
-const EXCLUDED_COUNTY_LIST = []; // to exclude any counties
 
 /*
 completed_counties = ['adams',
@@ -138,7 +143,7 @@ completed_counties = ['adams',
 let numErrors = 0;
 
 async function run(infilepath, headless){
-	const CONFIG = new ConfigReader('delaware');
+
 	let remainingInfo, finalpath, lastErroredParcel = '', numLastLinkErrors = 1;
 	console.log('Starting at:');
 	let beginTime = new Date();
@@ -195,9 +200,9 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 	const page = await browser.newPage();
 	// page.on('console', (log) => console[log._type](log._text));
 
-	const CONFIG = new ConfigReader('delaware');
+	const CONFIG = new ConfigReader();
 	
-	let excel = new ExcelWriter(0, 0, 'delaware');
+	let excel = new ExcelWriter(0, 0);
 	let worksheetInformation;
 	if(remainingInfo !== undefined) worksheetInformation = remainingInfo;
 	else {
@@ -233,17 +238,18 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 		// console.log(county);
 		let skipThisParcel = false;
 		if( (!LAYOUT_COUNTY_LIST.includes(county) && !(county in COUNTY_MAP)) || EXCLUDED_COUNTY_LIST.includes(county) ) skipThisParcel = true;
-		if(TARGET_COUNTIES === 'all'){
+		if(RUN_TYPE === 'all'){
 			// do nothing more
-		} else if(TARGET_COUNTIES === 'some'){
+		} else if(RUN_TYPE === 'some'){
 			if( !TARGET_COUNTY_LIST.includes(county) ) skipThisParcel = true;
-		} else if(TARGET_COUNTIES === 'between'){
+		} else if(RUN_TYPE === 'between'){
 
-			if( !( (TARGET_COUNTY_LIST[0].localeCompare(county) <= 0) && (TARGET_COUNTY_LIST[1].localeCompare(county) >= 0) )) skipThisParcel = true;
-		} else if(TARGET_COUNTIES !== county){
-
-			skipThisParcel = true;
+			if( !( (BETW_1.localeCompare(county) <= 0) && (BETW_2.localeCompare(county) >= 0) )) skipThisParcel = true;
+		} else if(RUN_TYPE === 'one'){
+			if(ONE !== county) skipThisParcel = true;
 		}
+		// console.log(RUN_TYPE);
+		// console.log(skipThisParcel);
 		let scrapedRow, comparisonArray;
 		if(skipThisParcel) {
 			continue; // uncomment this for full report
@@ -347,26 +353,26 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 				// if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).charCodeAt(21) + ' ' + (''+scrapedRow[i]).charCodeAt(22) + ' ' + (''+scrapedRow[i]).charCodeAt(23);
 				if(scrapedRow[i] !== undefined) scrapedRow[i] = (''+scrapedRow[i]).replace(/[\u000A\u00A0]|\s\s+/g,' ').trim();
 				
-				console.log(currentRow[i]);
-				console.log(scrapedRow[i]);
+				// console.log(currentRow[i]);
+				// console.log(scrapedRow[i]);
 
-				let firstArray = [], secondArray = [];
-				 if(currentRow[i] !== undefined){
-				 	for(let j = 0; j < currentRow[i].length; j++){
-				 		firstArray.push(currentRow[i].charCodeAt(j));	
-				 	}
-				 }
-				 if(scrapedRow[i] !== undefined){
-				 	for(let j = 0; j < scrapedRow[i].length; j++){
-				 		secondArray.push(scrapedRow[i].charCodeAt(j));	
-				 	}	
-				}
+				// let firstArray = [], secondArray = [];
+				//  if(currentRow[i] !== undefined){
+				//  	for(let j = 0; j < currentRow[i].length; j++){
+				//  		firstArray.push(currentRow[i].charCodeAt(j));	
+				//  	}
+				//  }
+				//  if(scrapedRow[i] !== undefined){
+				//  	for(let j = 0; j < scrapedRow[i].length; j++){
+				//  		secondArray.push(scrapedRow[i].charCodeAt(j));	
+				//  	}	
+				// }
 					
 				
-				console.log(firstArray);
-				 console.log(secondArray);
-				 console.log(' --- ');
-				console.log(currentRow[i] === scrapedRow[i]);
+				// console.log(firstArray);
+				//  console.log(secondArray);
+				//  console.log(' --- ');
+				// console.log(currentRow[i] === scrapedRow[i]);
 				comparisonArray.push(currentRow[i] === scrapedRow[i]);
 			}
 			
@@ -389,5 +395,5 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 	
 }
 
-run("C:\\Python37\\Programs\\MHPScraper\\Excel\\orig2.xlsx",false);
+run(CONFIG.USER_CONFIG.SOURCE_FILE,false);
 module.exports = run;
