@@ -2,7 +2,7 @@
 
 <h3>Overview:</h3>
 
-Use NodeJS Puppeteer headless browsing module to automate information collection from Ohio County Auditors' Websites and output to Excel in the desired format.
+Use NodeJS Puppeteer headless browsing module to automate information collection from Ohio County Auditors' Websites and output to Excel in the desired format. The purpose is to compare latest information present online with information already present in client's database to detect changes in property sales/updates.
 
 <h3>What the MHPScraper Application does:</h3>
 
