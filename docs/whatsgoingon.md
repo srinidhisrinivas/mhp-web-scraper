@@ -45,7 +45,7 @@ This document will highlight how the application does everything mentioned in ro
   <li>
     Output new information and comparison results to new Excel file.
     <ul>
-      <li> Changes in Excel sheet highlighted using Excel VBA Macros macros/diff.xlam and macros/cleardiff.xlam</li>
+      <li> Changes in Excel sheet highlighted using Excel VBA Macros diff.xlam and cleardiff.xlam in src/macros/ </li>
     </ul>
   </li>
 </ol>
