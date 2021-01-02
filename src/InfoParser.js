@@ -4,6 +4,13 @@ const CONFIG = new ConfigReader('franklin');
 const ERROR_LOGGER = require("./ErrorLogger.js");
 
 let InfoParser = function(){
+	return {
+		msg: "I commented this module out because I don't think it's used in this project",
+		but: "I didn't delete it because I would have to remove the 'require' line for this module in 50+ files"
+	}
+}
+/**
+let InfoParser = function(){
 	// this.parseAddressPackage = function(addressString){
 		
 	// 	const streetjson = fs.readFileSync('streetabbreviations.json');
@@ -143,5 +150,6 @@ let InfoParser = function(){
    		return splitStr.join(' ');
    }
 }
+**/
 
 module.exports = InfoParser;
