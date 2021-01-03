@@ -31,4 +31,4 @@ Use NodeJS Puppeteer headless browsing module to automate information collection
   </li>
 </ol>
 
-Visit docs/whatsgoingon.md for detailed information about how the application does all of these things.
+Visit `docs/whatsgoingon.md` for detailed information about how the application does all of these things.
