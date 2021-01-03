@@ -8,7 +8,7 @@ This document will highlight how the application does everything mentioned in ro
 
 <ul>
   <li> <a href='https://nodejs.org/en/download/'> NodeJS </a> - <em>For the actual programming of the application. </em> </li>
-  <li> <a href='https://www.chilkatsoft.com/downloads_ActiveX.asp'> Chilkat ActiveX Objects </a> - <em>To manipulate the configuration files with simple user interfaces</em> </li>
+  <li> <a href='https://www.chilkatsoft.com/downloads_ActiveX.asp'> Chilkat ActiveX Objects </a> - <em>To manipulate the configuration JSON files with simple user interfaces</em> </li>
 </ul>
 
 <h3> How to install application: </h3>
