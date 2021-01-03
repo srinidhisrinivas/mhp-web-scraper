@@ -76,7 +76,7 @@ This document will highlight how the application does everything mentioned in ro
 
 <h3> Folders and Descriptions </h3>
 
-Each folder has its own [folder_name]info.md file. There you can get more information specific to the files in the folder. Below is a list of all the folders and their purposes.
+Each folder has its own `[folder_name]info.md` file. There you can get more information specific to the files in the folder. Below is a list of all the folders and their purposes.
 
 <ul>
   <li>
@@ -89,7 +89,7 @@ Each folder has its own [folder_name]info.md file. There you can get more inform
     Excel/ - <em>Example input and output files</em>
   </li>
   <li>
-    src - <em>All of the source code. Most important folder.</em>
+    src/ - <em>All of the source code. Most important folder.</em>
   </li>
 </ul>
 
