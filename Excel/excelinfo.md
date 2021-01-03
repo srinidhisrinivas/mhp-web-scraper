@@ -18,4 +18,4 @@
   <li> Run the Macros `diff.xlam` and `cleardiff.xlam` (Installation instructions in `docs/whatsgoingon.md`) to see how the differences are highlighted using this last column. </li>
 </ul>
 
- <h3> DISCLAIMER: </h3> Information in these files are not up to date. These files are from some time in August, so the information on the Auditor's website may have since changed. 
+ <h3> DISCLAIMER: </h3> Information in these files are not up to date. These files are from some time in August 2020, so the information on the Auditor's website may have since changed. 
