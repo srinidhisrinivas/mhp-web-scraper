@@ -1,4 +1,4 @@
-#Excel Files
+# What's in Excel?
 
 <h3> What the input contains: </h3>
 
