@@ -1,7 +1,7 @@
 # What's going on in src?
 
 
-A lot. If you don't want to read through all of this and want to go through the code directly, skip to <a href='#what_next'> here </a> directly.
+A lot. If you don't want to read through all of this and want to go through the code directly, skip to <a href='#what_next'> here </a>.
 
 <hr>
 
