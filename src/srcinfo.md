@@ -75,7 +75,7 @@ Now I won't let you figure out by yourself which counties are similar. I will sh
 
 5 - Brown, Carroll, Logan, Morgan, Tuscarawas (5 counties)
 
-6 - Richland, Wood (2 counties)
+6 - <b>Richland</b>, Wood (2 counties)
 
 7 - Henry, Pike, Union (3 counties)
 
@@ -89,3 +89,5 @@ Of the counties that are similar, you can find out the counties that are <em> ex
 <h3 id='what_next'> What next? </h3>
 
 Read the file `index.js` and the files of the counties in <b> bold </b> in the <a href="#county_list"> county list above. </a> This should help you understand the bulk of the operation of the program.
+
+Hint: to extend this for the state of Indiana, the websites in category 6 and 8 will probably be of most interest to you, based on the layouts of those websites. In fact, start looking at Richland county (category 6) first because that will have some extra information about web-scraping in general and how web-scraping is done in these modules.

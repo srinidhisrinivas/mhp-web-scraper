@@ -374,7 +374,7 @@ async function runCycle(infilepath, remainingInfo, finalpath, headless, numLastL
 						// If Parcel ID# is empty, return error
 						if((''+parcelNum).trim() === '') {
 							scrapedInformation  = {
-								return_status: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE,
+								code: CONFIG.DEV_CONFIG.PAGE_ACCESS_ERROR_CODE,
 								scaped_information: []
 							};
 						}
