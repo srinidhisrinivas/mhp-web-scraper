@@ -88,6 +88,6 @@ Of the counties that are similar, you can find out the counties that are <em> ex
 
 <h3 id='what_next'> What next? </h3>
 
-Read the file `index.js` and the files of the counties in <b> bold </b> in the <a href="#county_list"> county list above. </a> This should help you understand the bulk of the operation of the program.
+Read the file `index.js` and the files of the counties in <b> bold </b> in the <a href="#county_list"> county list above. </a> (For example, Richland county would be located in `src/counties/richland/Scraper.js`.)  This should help you understand the bulk of the operation of the program.
 
-Hint: to extend this for the state of Indiana, the websites in category 6 and 8 will probably be of most interest to you, based on the layouts of those websites. In fact, start looking at Richland county (category 6) first because that will have some extra information about web-scraping in general and how web-scraping is done in these modules.
+<i>Hint:</i> To extend this for the state of Indiana, the websites in category 6 and 8 will probably be of most interest to you, based on the layouts of those websites. In fact, start looking at Richland county (category 6) first because that will have some extra information about web-scraping in general and how web-scraping is done in these modules.
