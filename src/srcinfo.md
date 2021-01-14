@@ -65,7 +65,7 @@ Now I won't let you figure out by yourself which counties are similar. I will sh
 
 <hr> 
 
-1 - Adams, Auglaize, Champaign, Clinton, Darke, Defiance, Erie, Fairfield, Fayette, Fulton, Gallia, Guernsey, Hancock, Highland, Hocking, Holmes, Huron, Jackson, Knox, Lake, Lawrence, Madison, Marion, Meigs, Miami, Morrow, Muskingum, Ottawa, Paulding, Perry, Pickaway, Portage, Preble, Ross, Sandusky, Seneca, Trumbull, Vinton, Washington, Wayne, Williams (41 counties)
+1 - <b>Adams</b>, Auglaize, Champaign, Clinton, Darke, Defiance, Erie, Fairfield, Fayette, Fulton, Gallia, Guernsey, Hancock, Highland, Hocking, Holmes, Huron, Jackson, Knox, Lake, Lawrence, Madison, Marion, Meigs, Miami, Morrow, Muskingum, Ottawa, Paulding, Perry, Pickaway, Portage, Preble, Ross, Sandusky, Seneca, Trumbull, Vinton, Washington, Wayne, Williams (41 counties)
 
 2 - Allen, Ashland, Delaware, Belmont, Columbiana, Mahoning, Scioto (7 counties)
 
@@ -79,9 +79,9 @@ Now I won't let you figure out by yourself which counties are similar. I will sh
 
 7 - Henry, Pike, Union (3 counties)
 
-8 - Clark, Shelby (2 counties)
+8 - <b>Clark</b>, Shelby (2 counties)
 
-The following 12 counties are all dissimilar from each other and each of the counties listed above: <strike>Cuyahoga</strike>, Geauga, Greene, Hamilton, Jefferson, Licking, <strike>Lorain</strike>, Lucas, Medina, <strike>Mercer</strike>, Summit, Warren
+The following 12 counties are all dissimilar from each other and each of the counties listed above: <strike>Cuyahoga</strike>, Geauga, Greene, Hamilton, <b>Jefferson</b>, Licking, <strike>Lorain</strike>, Lucas, Medina, <strike>Mercer</strike>, Summit, Warren
 <hr>
 
 Of the counties that are similar, you can find out the counties that are <em> exactly </em> the same by referring to the variable `COUNTY_MAP` in `index.js`.
@@ -90,4 +90,4 @@ Of the counties that are similar, you can find out the counties that are <em> ex
 
 Read the file `index.js` and the files of the counties in <b> bold </b> in the <a href="#county_list"> county list above. </a> (For example, Richland county would be located in `src/counties/richland/Scraper.js`.)  This should help you understand the bulk of the operation of the program.
 
-<i>Hint:</i> To extend this for the state of Indiana, the websites in category 6 and 8 will probably be of most interest to you, based on the layouts of those websites. In fact, start looking at Richland county (category 6) first because that will have some extra information about web-scraping in general and how web-scraping is done in these modules.
+<i>Hint:</i> To extend this for the state of Indiana, the websites in category 6 and 8 will probably be of most interest to you, based on the layouts of those websites. In fact, start looking at Richland county (category 6) first because that will have some extra information about web-scraping in general and how web-scraping is done in these modules. The functions in the scrapers of other counties serve the same purpose as the functions in Richland county, so I've only included function descriptions in the one for Richland county.
